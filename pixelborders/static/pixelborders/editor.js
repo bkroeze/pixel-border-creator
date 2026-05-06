@@ -27,6 +27,28 @@
     return next;
   }
 
+  function sectorBounds(width, height, sector) {
+    const xCuts = [0, Math.floor(width / 3), Math.floor((width * 2) / 3), width];
+    const yCuts = [0, Math.floor(height / 3), Math.floor((height * 2) / 3), height];
+    return {
+      x1: xCuts[sector.col],
+      x2: xCuts[sector.col + 1],
+      y1: yCuts[sector.row],
+      y2: yCuts[sector.row + 1],
+    };
+  }
+
+  function sectorForCell(x, y, width, height) {
+    return {
+      col: x < Math.floor(width / 3) ? 0 : x < Math.floor((width * 2) / 3) ? 1 : 2,
+      row: y < Math.floor(height / 3) ? 0 : y < Math.floor((height * 2) / 3) ? 1 : 2,
+    };
+  }
+
+  function sameSector(left, right) {
+    return left && right && left.col === right.col && left.row === right.row;
+  }
+
   function addSliceGuides(grid) {
     grid.querySelectorAll(".slice-guide").forEach((guide) => guide.remove());
     [1 / 3, 2 / 3].forEach((position) => {
@@ -58,14 +80,16 @@
     let active = TRANSPARENT;
     let unlocked = false;
     let drawing = false;
+    let selectSectorMode = false;
+    let activeSector = null;
+    let copiedSector = null;
 
     const grid = form.querySelector(".pixel-grid");
     const paletteInput = form.querySelector('input[name="palette_json"]');
     const pixelsInput = form.querySelector('input[name="pixels_json"]');
-    const widthInput = form.querySelector("[data-width-input]");
+    const sizeInput = form.querySelector("[data-size-input]");
     const heightInput = form.querySelector("[data-height-input]");
-    const widthOutput = form.querySelector("[data-width-output]");
-    const heightOutput = form.querySelector("[data-height-output]");
+    const sizeOutput = form.querySelector("[data-size-output]");
     const cssPreview = form.querySelector(".css-preview");
     const canvas = form.querySelector(".render-canvas");
     const ctx = canvas.getContext("2d");
@@ -73,6 +97,8 @@
     const lockIcon = lockButton.querySelector("i");
     const nameInput = form.querySelector('input[name="name"]');
     const repeatInput = form.querySelector("[data-repeat-input]");
+    const sectorSelectButton = form.querySelector("[data-sector-select]");
+    const sectorActionButtons = form.querySelectorAll("[data-sector-action]");
 
     function serialize() {
       paletteInput.value = JSON.stringify(palette);
@@ -121,6 +147,36 @@
       lockButton.title = unlocked ? "Lock palette" : "Unlock palette";
     }
 
+    function updateSectorTools() {
+      const hasSector = activeSector !== null;
+      sectorSelectButton.classList.toggle("active", selectSectorMode);
+      sectorActionButtons.forEach((button) => {
+        const action = button.dataset.sectorAction;
+        button.disabled = !hasSector || (action === "paste" && copiedSector === null);
+      });
+      grid.querySelectorAll(".pixel-cell").forEach((cell) => {
+        const x = Number(cell.dataset.x);
+        const y = Number(cell.dataset.y);
+        const sector = sectorForCell(x, y, pixels[0].length, pixels.length);
+        cell.classList.toggle("sector-active", sameSector(activeSector, sector));
+      });
+    }
+
+    function activateSectorForCell(button) {
+      activeSector = sectorForCell(
+        Number(button.dataset.x),
+        Number(button.dataset.y),
+        pixels[0].length,
+        pixels.length,
+      );
+      updateSectorTools();
+    }
+
+    function activeSectorBounds() {
+      if (!activeSector) return null;
+      return sectorBounds(pixels[0].length, pixels.length, activeSector);
+    }
+
     function renderGrid() {
       const height = pixels.length;
       const width = pixels[0].length;
@@ -138,15 +194,16 @@
         });
       });
       addSliceGuides(grid);
-      widthOutput.value = String(width);
-      heightOutput.value = String(height);
-      widthInput.value = String(width);
-      heightInput.value = String(height);
+      sizeOutput.value = String(width);
+      sizeInput.value = String(width);
+      heightInput.value = String(width);
       serialize();
       updateCss();
+      updateSectorTools();
     }
 
     function setPixel(button) {
+      activateSectorForCell(button);
       const x = Number(button.dataset.x);
       const y = Number(button.dataset.y);
       pixels[y][x] = active;
@@ -186,22 +243,21 @@
     });
 
     form.querySelector(".clear-grid").addEventListener("click", () => {
-      pixels = normalizePixels([], Number(widthInput.value), Number(heightInput.value));
+      pixels = normalizePixels([], Number(sizeInput.value), Number(sizeInput.value));
       renderGrid();
     });
 
     function resize() {
-      pixels = normalizePixels(pixels, Number(widthInput.value), Number(heightInput.value));
-      state.width = Number(widthInput.value);
-      state.height = Number(heightInput.value);
+      pixels = normalizePixels(pixels, Number(sizeInput.value), Number(sizeInput.value));
+      state.width = Number(sizeInput.value);
+      state.height = Number(sizeInput.value);
       state.css = state.css.replace(/border-width: \d+px;/, `border-width: ${Math.max(1, Math.floor(Math.min(state.width, state.height) / 3))}px;`)
         .replace(/border-image-slice: \d+ fill;/, `border-image-slice: ${Math.max(1, Math.floor(Math.min(state.width, state.height) / 3))} fill;`)
         .replace(/border-image-width: \d+px;/, `border-image-width: ${Math.max(1, Math.floor(Math.min(state.width, state.height) / 3))}px;`);
       renderGrid();
     }
 
-    widthInput.addEventListener("input", resize);
-    heightInput.addEventListener("input", resize);
+    sizeInput.addEventListener("input", resize);
     nameInput.addEventListener("input", updateCss);
     repeatInput.addEventListener("change", () => {
       state.css = state.css.replace(/border-image-repeat: (stretch|repeat|round);/, `border-image-repeat: ${repeatInput.value};`);
@@ -210,6 +266,12 @@
 
     grid.addEventListener("pointerdown", (event) => {
       if (!event.target.classList.contains("pixel-cell")) return;
+      if (selectSectorMode) {
+        activateSectorForCell(event.target);
+        selectSectorMode = false;
+        updateSectorTools();
+        return;
+      }
       drawing = true;
       event.target.setPointerCapture(event.pointerId);
       setPixel(event.target);
@@ -219,6 +281,62 @@
     });
     window.addEventListener("pointerup", () => {
       drawing = false;
+    });
+
+    sectorSelectButton.addEventListener("click", () => {
+      selectSectorMode = !selectSectorMode;
+      updateSectorTools();
+    });
+
+    sectorActionButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        const bounds = activeSectorBounds();
+        if (!bounds) return;
+        const width = bounds.x2 - bounds.x1;
+        const height = bounds.y2 - bounds.y1;
+        const action = button.dataset.sectorAction;
+
+        if (action === "fill") {
+          for (let y = bounds.y1; y < bounds.y2; y += 1) {
+            for (let x = bounds.x1; x < bounds.x2; x += 1) pixels[y][x] = active;
+          }
+        }
+
+        if (action === "copy") {
+          copiedSector = [];
+          for (let y = bounds.y1; y < bounds.y2; y += 1) {
+            copiedSector.push(pixels[y].slice(bounds.x1, bounds.x2));
+          }
+        }
+
+        if (action === "paste" && copiedSector) {
+          for (let y = 0; y < height; y += 1) {
+            for (let x = 0; x < width; x += 1) {
+              const sourceY = Math.floor((y * copiedSector.length) / height);
+              const sourceX = Math.floor((x * copiedSector[0].length) / width);
+              pixels[bounds.y1 + y][bounds.x1 + x] = copiedSector[sourceY][sourceX];
+            }
+          }
+        }
+
+        if (action === "rotate-left" || action === "rotate-right") {
+          const source = [];
+          for (let y = bounds.y1; y < bounds.y2; y += 1) source.push(pixels[y].slice(bounds.x1, bounds.x2));
+          for (let y = 0; y < height; y += 1) {
+            for (let x = 0; x < width; x += 1) {
+              const sourceX = action === "rotate-right"
+                ? Math.floor((y * width) / height)
+                : width - 1 - Math.floor((y * width) / height);
+              const sourceY = action === "rotate-right"
+                ? height - 1 - Math.floor((x * height) / width)
+                : Math.floor((x * height) / width);
+              pixels[bounds.y1 + y][bounds.x1 + x] = source[sourceY][sourceX];
+            }
+          }
+        }
+
+        renderGrid();
+      });
     });
 
     cssPreview.addEventListener("click", async () => {

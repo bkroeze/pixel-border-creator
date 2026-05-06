@@ -72,13 +72,32 @@
       <button class="ui icon labeled button clear-grid" type="button">
         <i class="eraser icon"></i>Clear
       </button>
+      <button class="ui icon button sector-select" type="button" title="Select sector" data-sector-select>
+        <i class="mouse pointer icon"></i>
+      </button>
+      <div class="sector-tools" data-sector-tools>
+        <button class="ui icon button" type="button" title="Fill" data-sector-action="fill" disabled>
+          <i class="fill drip icon"></i>
+        </button>
+        <button class="ui icon button" type="button" title="Rotate L" data-sector-action="rotate-left" disabled>
+          <i class="undo icon"></i>
+        </button>
+        <button class="ui icon button" type="button" title="Rotate R" data-sector-action="rotate-right" disabled>
+          <i class="redo icon"></i>
+        </button>
+        <button class="ui icon button" type="button" title="Copy" data-sector-action="copy" disabled>
+          <i class="copy icon"></i>
+        </button>
+        <button class="ui icon button" type="button" title="Paste" data-sector-action="paste" disabled>
+          <i class="paste icon"></i>
+        </button>
+      </div>
     </div>
 
     <div class="size-controls">
-      <label>Width <output data-width-output>{{ active_design.width }}</output></label>
-      <input name="width" type="range" min="5" max="100" value="{{ active_design.width }}" data-width-input>
-      <label>Height <output data-height-output>{{ active_design.height }}</output></label>
-      <input name="height" type="range" min="5" max="100" value="{{ active_design.height }}" data-height-input>
+      <label>Size <output data-size-output>{{ active_design.width }}</output></label>
+      <input name="width" type="range" min="5" max="100" value="{{ active_design.width }}" data-size-input>
+      <input name="height" type="hidden" value="{{ active_design.width }}" data-height-input>
     </div>
 
     <div class="editor-layout">

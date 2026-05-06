@@ -41,6 +41,16 @@ class PixelBorderDesignViewTests(TestCase):
         self.assertEqual(PixelBorderDesign.objects.get(owner=self.owner, name="Saved Border").border_repeat, "round")
         self.assertContains(response, "Visible Designs")
 
+    def test_save_requires_square_design(self):
+        self.client.login(username="owner", password="pw")
+        response = self.client.post(
+            reverse("pixelborders:save"),
+            self.payload(width="21", height="18"),
+            HTTP_HX_REQUEST="true",
+        )
+        self.assertEqual(response.status_code, 422)
+        self.assertFalse(PixelBorderDesign.objects.filter(owner=self.owner, name="Saved Border").exists())
+
     def test_public_design_visible_in_list(self):
         PixelBorderDesign.objects.create(owner=self.owner, name="Public", is_public=True)
         PixelBorderDesign.objects.create(owner=self.owner, name="Private", is_public=False)

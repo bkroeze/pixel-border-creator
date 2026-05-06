@@ -1,6 +1,7 @@
 import json
 
 from django import forms
+from django.forms.models import construct_instance
 
 from .models import DEFAULT_PALETTE, PixelBorderDesign, default_pixels
 
@@ -41,6 +42,8 @@ class PixelBorderDesignForm(forms.ModelForm):
         cleaned = super().clean()
         if self.errors:
             return cleaned
+        if cleaned.get("width") != cleaned.get("height"):
+            raise forms.ValidationError("Pixel border designs must be square.")
         probe = PixelBorderDesign(
             owner=self.owner,
             name=cleaned.get("name") or "Untitled",
@@ -60,6 +63,9 @@ class PixelBorderDesignForm(forms.ModelForm):
     def __init__(self, *args, owner=None, **kwargs):
         self.owner = owner
         super().__init__(*args, **kwargs)
+
+    def _post_clean(self):
+        self.instance = construct_instance(self, self.instance, self._meta.fields, self._meta.exclude)
 
     def save(self, commit=True):
         instance = super().save(commit=False)

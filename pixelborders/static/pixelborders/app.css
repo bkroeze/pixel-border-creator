@@ -100,6 +100,23 @@ h2 {
   margin: 18px 0;
 }
 
+.sector-tools {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding-left: 8px;
+  border-left: 2px solid rgba(30, 26, 22, .22);
+}
+
+.sector-select.active {
+  background: var(--gold) !important;
+  color: var(--ink) !important;
+}
+
+.sector-tools .button:disabled {
+  opacity: .34 !important;
+}
+
 .swatch {
   width: 42px;
   height: 42px;
@@ -127,7 +144,7 @@ h2 {
 
 .size-controls {
   display: grid;
-  grid-template-columns: auto minmax(120px, 1fr) auto minmax(120px, 1fr);
+  grid-template-columns: auto minmax(120px, 1fr);
   gap: 10px;
   align-items: center;
   margin-bottom: 18px;
@@ -158,6 +175,11 @@ h2 {
   border: 0;
   padding: 0;
   cursor: crosshair;
+}
+
+.pixel-cell.sector-active {
+  outline: 2px solid rgba(229, 169, 54, .92);
+  outline-offset: -2px;
 }
 
 .slice-guide {
