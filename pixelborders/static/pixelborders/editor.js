@@ -307,6 +307,7 @@
           for (let y = bounds.y1; y < bounds.y2; y += 1) {
             copiedSector.push(pixels[y].slice(bounds.x1, bounds.x2));
           }
+          selectSectorMode = true;
         }
 
         if (action === "paste" && copiedSector) {
@@ -317,6 +318,7 @@
               pixels[bounds.y1 + y][bounds.x1 + x] = copiedSector[sourceY][sourceX];
             }
           }
+          selectSectorMode = true;
         }
 
         if (action === "rotate-left" || action === "rotate-right") {

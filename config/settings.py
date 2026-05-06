@@ -15,7 +15,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "django_htmx",
-    "pixelborders",
+    "pixelborders.apps.PixelbordersConfig",
 ]
 
 MIDDLEWARE = [
