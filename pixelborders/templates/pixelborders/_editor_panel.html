@@ -1,0 +1,84 @@
+<section class="studio-panel" id="editor-panel">
+  <form
+    class="ui form editor-form"
+    method="post"
+    action="{% url 'pixelborders:save' %}"
+    hx-post="{% url 'pixelborders:save' %}"
+    hx-target="#workspace"
+    hx-swap="outerHTML"
+    data-pixel-editor
+    data-state="{{ active_design_json|escape }}"
+  >
+    {% csrf_token %}
+    <input type="hidden" name="design_id" value="{% if active_design.pk and active_can_edit %}{{ active_design.pk }}{% endif %}">
+    <input type="hidden" name="palette_json" value="{{ palette_json|escape }}">
+    <input type="hidden" name="pixels_json" value="{{ pixels_json|escape }}">
+
+    {% if form and form.errors %}
+      <div class="ui negative message">{{ form.errors }}</div>
+    {% endif %}
+
+    <div class="editor-head">
+      <div class="field name-field">
+        <label for="id_name">Name</label>
+        <input id="id_name" name="name" type="text" maxlength="80" value="{{ active_design.name }}">
+      </div>
+      <div class="field public-field">
+        <label>Visibility</label>
+        <div class="ui toggle checkbox">
+          <input type="checkbox" name="is_public" {% if active_design.is_public %}checked{% endif %}>
+          <label>Public</label>
+        </div>
+      </div>
+      <div class="button-row">
+        <button class="ui primary icon labeled button" type="submit">
+          <i class="save icon"></i>Save
+        </button>
+        {% if active_design.pk and active_can_edit %}
+          <button
+            class="ui icon button"
+            type="button"
+            title="Delete"
+            hx-post="{% url 'pixelborders:delete' active_design.pk %}"
+            hx-target="#workspace"
+            hx-swap="outerHTML"
+            hx-confirm="Delete this design?"
+          >
+            <i class="trash icon"></i>
+          </button>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="tools-strip">
+      <button class="swatch transparent active" type="button" data-swatch="transparent" title="Transparent"></button>
+      <button class="swatch" type="button" data-swatch="0" title="Color 1"></button>
+      <button class="swatch" type="button" data-swatch="1" title="Color 2"></button>
+      <button class="swatch" type="button" data-swatch="2" title="Color 3"></button>
+      <button class="ui icon button palette-lock" type="button" title="Unlock palette">
+        <i class="lock icon"></i>
+      </button>
+      <input class="palette-picker" type="color" data-picker="0" hidden>
+      <input class="palette-picker" type="color" data-picker="1" hidden>
+      <input class="palette-picker" type="color" data-picker="2" hidden>
+      <button class="ui icon labeled button clear-grid" type="button">
+        <i class="eraser icon"></i>Clear
+      </button>
+    </div>
+
+    <div class="size-controls">
+      <label>Width <output data-width-output>{{ active_design.width }}</output></label>
+      <input name="width" type="range" min="5" max="100" value="{{ active_design.width }}" data-width-input>
+      <label>Height <output data-height-output>{{ active_design.height }}</output></label>
+      <input name="height" type="range" min="5" max="100" value="{{ active_design.height }}" data-height-input>
+    </div>
+
+    <div class="editor-layout">
+      <div class="pixel-grid" role="grid" aria-label="Pixel border design grid"></div>
+      <div class="css-preview-wrap">
+        <pre class="css-preview" title="Click to copy CSS">{{ generated_css }}</pre>
+        <canvas class="render-canvas" width="{{ active_design.width }}" height="{{ active_design.height }}" hidden></canvas>
+      </div>
+    </div>
+  </form>
+</section>

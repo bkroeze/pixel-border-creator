@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pixel-borders"
+version = "0.1.0"
+description = "Django app for designing 9-patch style CSS border-image PNGs."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+  "Django>=5.0,<6.0",
+  "django-htmx>=1.17,<2.0",
+]
+
+[tool.setuptools.packages.find]
+include = ["config*", "pixelborders*"]
+
+[tool.setuptools.package-data]
+pixelborders = [
+  "templates/pixelborders/*.html",
+  "static/pixelborders/*",
+]

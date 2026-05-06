@@ -1,0 +1,252 @@
+:root {
+  --ink: #1e1a16;
+  --paper: #f7f0e2;
+  --panel: #fffaf0;
+  --line: #2b241b;
+  --accent: #d24d2e;
+  --blue: #2c6e8f;
+  --gold: #e5a936;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  color: var(--ink);
+  background:
+    linear-gradient(90deg, rgba(30, 26, 22, .06) 1px, transparent 1px),
+    linear-gradient(rgba(30, 26, 22, .06) 1px, transparent 1px),
+    var(--paper);
+  background-size: 24px 24px;
+  font-family: Georgia, "Times New Roman", serif;
+}
+
+.topbar,
+.app-shell,
+.credit {
+  width: min(1180px, calc(100vw - 32px));
+  margin: 0 auto;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 28px 0 18px;
+}
+
+h1,
+h2,
+p {
+  margin: 0;
+}
+
+h1 {
+  font-size: clamp(2rem, 5vw, 4.8rem);
+  line-height: .9;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+h2 {
+  font-size: 1.45rem;
+  text-transform: uppercase;
+}
+
+.eyebrow {
+  font-family: "Courier New", monospace;
+  font-size: .78rem;
+  letter-spacing: 0;
+  text-transform: uppercase;
+  color: var(--blue);
+}
+
+.workspace {
+  display: grid;
+  gap: 28px;
+}
+
+.studio-panel,
+.design-list,
+.login-panel {
+  border: 2px solid var(--line);
+  background: rgba(255, 250, 240, .94);
+  box-shadow: 8px 8px 0 var(--line);
+}
+
+.studio-panel {
+  padding: 18px;
+}
+
+.editor-head {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) auto auto;
+  gap: 14px;
+  align-items: end;
+}
+
+.button-row,
+.tools-strip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.tools-strip {
+  margin: 18px 0;
+}
+
+.swatch {
+  width: 42px;
+  height: 42px;
+  border: 2px solid var(--line);
+  box-shadow: 3px 3px 0 var(--line);
+  cursor: pointer;
+}
+
+.swatch.active {
+  outline: 4px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.transparent,
+.pixel-cell.transparent {
+  background-color: #fff;
+  background-image:
+    linear-gradient(45deg, #c9c0b1 25%, transparent 25%),
+    linear-gradient(-45deg, #c9c0b1 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #c9c0b1 75%),
+    linear-gradient(-45deg, transparent 75%, #c9c0b1 75%);
+  background-position: 0 0, 0 6px, 6px -6px, -6px 0;
+  background-size: 12px 12px;
+}
+
+.size-controls {
+  display: grid;
+  grid-template-columns: auto minmax(120px, 1fr) auto minmax(120px, 1fr);
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 18px;
+  font-family: "Courier New", monospace;
+}
+
+.editor-layout {
+  display: grid;
+  grid-template-columns: minmax(280px, 58vh) minmax(260px, 1fr);
+  gap: 22px;
+  align-items: start;
+}
+
+.pixel-grid {
+  display: grid;
+  width: min(58vh, 100%);
+  aspect-ratio: 1 / 1;
+  border: 3px solid var(--line);
+  background: var(--line);
+  gap: 1px;
+  touch-action: none;
+}
+
+.pixel-cell {
+  min-width: 0;
+  min-height: 0;
+  border: 0;
+  padding: 0;
+  cursor: crosshair;
+}
+
+.css-preview-wrap {
+  padding: 24px;
+}
+
+.css-preview {
+  min-height: 220px;
+  margin: 0;
+  padding: 18px;
+  overflow: auto;
+  background: var(--panel);
+  color: var(--ink);
+  white-space: pre-wrap;
+  cursor: copy;
+  font-family: "Courier New", monospace;
+  font-size: .9rem;
+}
+
+.design-list {
+  padding: 18px;
+}
+
+.section-title {
+  margin-bottom: 14px;
+}
+
+.design-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 16px;
+}
+
+.design-card {
+  display: grid;
+  gap: 10px;
+}
+
+.design-preview {
+  width: 100%;
+  min-height: 112px;
+  padding: 18px;
+  border: 0;
+  background: var(--panel);
+  cursor: pointer;
+  color: var(--ink);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.1rem;
+}
+
+.design-meta {
+  display: grid;
+  gap: 2px;
+  font-family: "Courier New", monospace;
+  font-size: .82rem;
+}
+
+.design-meta span,
+.empty-state,
+.credit {
+  color: rgba(30, 26, 22, .72);
+}
+
+.credit {
+  padding: 28px 0;
+  font-family: "Courier New", monospace;
+  font-size: .82rem;
+}
+
+.login-page {
+  display: grid;
+  place-items: center;
+}
+
+.login-shell {
+  width: min(420px, calc(100vw - 32px));
+}
+
+.login-panel {
+  padding: 24px;
+}
+
+@media (max-width: 760px) {
+  .editor-head,
+  .editor-layout,
+  .size-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .pixel-grid {
+    width: 100%;
+  }
+}

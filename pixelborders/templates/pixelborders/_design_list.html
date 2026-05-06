@@ -1,0 +1,28 @@
+<section class="design-list" id="design-list">
+  <div class="section-title">
+    <p class="eyebrow">Library</p>
+    <h2>Visible Designs</h2>
+  </div>
+  <div class="design-grid">
+    {% for design in visible_designs %}
+      <article class="design-card">
+        <button
+          class="design-preview"
+          type="button"
+          hx-get="{% url 'pixelborders:load' design.pk %}"
+          hx-target="#workspace"
+          hx-swap="outerHTML"
+          data-preview-state="{{ design.preview_json|escape }}"
+        >
+          <span>{{ design.name }}</span>
+        </button>
+        <div class="design-meta">
+          <strong>{{ design.name }}</strong>
+          <span>{% if design.is_public %}Public{% else %}Private{% endif %} · {{ design.owner.username }}</span>
+        </div>
+      </article>
+    {% empty %}
+      <p class="empty-state">No saved designs yet.</p>
+    {% endfor %}
+  </div>
+</section>

@@ -1,0 +1,29 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pixel Border Creator - Sign in</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fomantic-ui@2.9.4/dist/semantic.min.css">
+  <link rel="stylesheet" href="{% static 'pixelborders/app.css' %}">
+</head>
+<body class="login-page">
+  <main class="login-shell">
+    <form class="ui form login-panel" method="post">
+      {% csrf_token %}
+      <h1>Pixel Border Creator</h1>
+      {{ form.non_field_errors }}
+      <div class="field">
+        <label for="{{ form.username.id_for_label }}">Username</label>
+        {{ form.username }}
+      </div>
+      <div class="field">
+        <label for="{{ form.password.id_for_label }}">Password</label>
+        {{ form.password }}
+      </div>
+      <button class="ui primary fluid button" type="submit">Sign in</button>
+    </form>
+  </main>
+</body>
+</html>
