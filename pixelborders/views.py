@@ -24,6 +24,7 @@ def _blank_state(user):
         slug="untitled-border",
         width=21,
         height=21,
+        border_repeat="stretch",
         palette=list(DEFAULT_PALETTE),
         pixels=default_pixels(),
     )
@@ -51,6 +52,7 @@ def _editor_context(request, design=None, form=None):
                 "palette": active.palette,
                 "pixels": active.pixels,
                 "isPublic": active.is_public,
+                "borderRepeat": active.border_repeat,
                 "canEdit": active_can_edit,
                 "css": generate_css(active),
             }

@@ -12,7 +12,7 @@ class PixelBorderDesignForm(forms.ModelForm):
 
     class Meta:
         model = PixelBorderDesign
-        fields = ["name", "is_public", "width", "height"]
+        fields = ["name", "is_public", "border_repeat", "width", "height"]
         widgets = {
             "name": forms.TextInput(attrs={"placeholder": "Design name"}),
             "width": forms.NumberInput(attrs={"min": 5, "max": 100}),
@@ -49,6 +49,7 @@ class PixelBorderDesignForm(forms.ModelForm):
             height=cleaned.get("height") or 21,
             palette=cleaned.get("palette_json") or DEFAULT_PALETTE,
             pixels=cleaned.get("pixels_json") or default_pixels(),
+            border_repeat=cleaned.get("border_repeat") or "stretch",
         )
         try:
             probe.clean()

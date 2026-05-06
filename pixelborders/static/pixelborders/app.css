@@ -83,7 +83,7 @@ h2 {
 
 .editor-head {
   display: grid;
-  grid-template-columns: minmax(180px, 1fr) auto auto;
+  grid-template-columns: minmax(180px, 1fr) auto minmax(140px, auto) auto;
   gap: 14px;
   align-items: end;
 }

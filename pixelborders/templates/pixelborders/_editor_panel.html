@@ -30,6 +30,14 @@
           <label>Public</label>
         </div>
       </div>
+      <div class="field repeat-field">
+        <label for="id_border_repeat">Repeat</label>
+        <select id="id_border_repeat" name="border_repeat" class="ui dropdown" data-repeat-input>
+          <option value="stretch" {% if active_design.border_repeat == "stretch" %}selected{% endif %}>Stretch</option>
+          <option value="round" {% if active_design.border_repeat == "round" %}selected{% endif %}>Round</option>
+          <option value="repeat" {% if active_design.border_repeat == "repeat" %}selected{% endif %}>Repeat</option>
+        </select>
+      </div>
       <div class="button-row">
         <button class="ui primary icon labeled button" type="submit">
           <i class="save icon"></i>Save

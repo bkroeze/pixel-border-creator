@@ -49,8 +49,14 @@ class PixelBorderDesignModelTests(TestCase):
         self.assertFalse(public.can_edit(other))
 
     def test_css_generation(self):
-        design = PixelBorderDesign.objects.create(owner=self.user, name="Fancy Frame")
+        design = PixelBorderDesign.objects.create(owner=self.user, name="Fancy Frame", border_repeat="round")
         css = generate_css(design, "data:image/png;base64,abc")
         self.assertIn(".pixel-border-fancy-frame", css)
         self.assertIn("border-image-source", css)
         self.assertIn("border-image-slice: 7 fill", css)
+        self.assertIn("border-image-repeat: round", css)
+
+    def test_border_repeat_is_limited_to_css_repeat_modes(self):
+        design = PixelBorderDesign(owner=self.user, name="Bad Repeat", border_repeat="space")
+        with self.assertRaises(ValidationError):
+            design.full_clean()

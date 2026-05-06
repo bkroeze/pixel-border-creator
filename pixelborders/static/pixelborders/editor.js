@@ -72,6 +72,7 @@
     const lockButton = form.querySelector(".palette-lock");
     const lockIcon = lockButton.querySelector("i");
     const nameInput = form.querySelector('input[name="name"]');
+    const repeatInput = form.querySelector("[data-repeat-input]");
 
     function serialize() {
       paletteInput.value = JSON.stringify(palette);
@@ -103,7 +104,7 @@
       cssPreview.style.borderImageSource = `url("${imageUrl}")`;
       cssPreview.style.borderImageSlice = `${Math.max(1, Math.floor(Math.min(canvas.width, canvas.height) / 3))} fill`;
       cssPreview.style.borderImageWidth = `${Math.max(1, Math.floor(Math.min(canvas.width, canvas.height) / 3))}px`;
-      cssPreview.style.borderImageRepeat = "stretch";
+      cssPreview.style.borderImageRepeat = repeatInput.value;
     }
 
     function updateSwatches() {
@@ -202,6 +203,10 @@
     widthInput.addEventListener("input", resize);
     heightInput.addEventListener("input", resize);
     nameInput.addEventListener("input", updateCss);
+    repeatInput.addEventListener("change", () => {
+      state.css = state.css.replace(/border-image-repeat: (stretch|repeat|round);/, `border-image-repeat: ${repeatInput.value};`);
+      updateCss();
+    });
 
     grid.addEventListener("pointerdown", (event) => {
       if (!event.target.classList.contains("pixel-cell")) return;
@@ -248,7 +253,7 @@
       button.style.borderImageSource = `url("${url}")`;
       button.style.borderImageSlice = `${state.slice} fill`;
       button.style.borderImageWidth = `${state.slice}px`;
-      button.style.borderImageRepeat = "stretch";
+      button.style.borderImageRepeat = state.repeat || "stretch";
     } catch (error) {
       console.warn("Could not render design preview", error);
     }

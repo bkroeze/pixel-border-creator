@@ -18,6 +18,7 @@ class PixelBorderDesignViewTests(TestCase):
             "name": "Saved Border",
             "width": "21",
             "height": "21",
+            "border_repeat": "round",
             "palette_json": json.dumps(DEFAULT_PALETTE),
             "pixels_json": json.dumps(default_pixels()),
         }
@@ -37,6 +38,7 @@ class PixelBorderDesignViewTests(TestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertTrue(PixelBorderDesign.objects.filter(owner=self.owner, name="Saved Border").exists())
+        self.assertEqual(PixelBorderDesign.objects.get(owner=self.owner, name="Saved Border").border_repeat, "round")
         self.assertContains(response, "Visible Designs")
 
     def test_public_design_visible_in_list(self):

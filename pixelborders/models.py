@@ -7,6 +7,11 @@ from django.template.defaultfilters import slugify
 
 
 DEFAULT_PALETTE = ["#2f2a22", "#f2c14e", "#3f88c5"]
+BORDER_REPEAT_CHOICES = [
+    ("stretch", "Stretch"),
+    ("repeat", "Repeat"),
+    ("round", "Round"),
+]
 
 
 def default_palette():
@@ -28,6 +33,11 @@ class PixelBorderDesign(models.Model):
     is_public = models.BooleanField(default=False)
     width = models.PositiveSmallIntegerField(default=21)
     height = models.PositiveSmallIntegerField(default=21)
+    border_repeat = models.CharField(
+        max_length=10,
+        choices=BORDER_REPEAT_CHOICES,
+        default="stretch",
+    )
     palette = models.JSONField(default=default_palette)
     pixels = models.JSONField(default=default_pixels)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -66,6 +76,7 @@ class PixelBorderDesign(models.Model):
                 "pixels": self.pixels,
                 "className": self.css_class_name,
                 "slice": self.slice_size,
+                "repeat": self.border_repeat,
             }
         )
 
@@ -75,6 +86,8 @@ class PixelBorderDesign(models.Model):
             errors["width"] = "Width must be between 5 and 100."
         if not 5 <= self.height <= 100:
             errors["height"] = "Height must be between 5 and 100."
+        if self.border_repeat not in {choice[0] for choice in BORDER_REPEAT_CHOICES}:
+            errors["border_repeat"] = "Border repeat must be stretch, repeat, or round."
         if not isinstance(self.palette, list) or len(self.palette) != 3:
             errors["palette"] = "Palette must contain exactly three colors."
         elif not all(isinstance(color, str) and color.startswith("#") for color in self.palette):
