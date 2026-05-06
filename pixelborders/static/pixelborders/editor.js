@@ -27,6 +27,21 @@
     return next;
   }
 
+  function addSliceGuides(grid) {
+    grid.querySelectorAll(".slice-guide").forEach((guide) => guide.remove());
+    [1 / 3, 2 / 3].forEach((position) => {
+      const verticalGuide = document.createElement("span");
+      verticalGuide.className = "slice-guide vertical";
+      verticalGuide.style.left = `${position * 100}%`;
+      grid.appendChild(verticalGuide);
+
+      const horizontalGuide = document.createElement("span");
+      horizontalGuide.className = "slice-guide horizontal";
+      horizontalGuide.style.top = `${position * 100}%`;
+      grid.appendChild(horizontalGuide);
+    });
+  }
+
   function paintCell(button, value, palette) {
     button.classList.toggle("transparent", value === TRANSPARENT);
     button.style.backgroundColor = value === TRANSPARENT ? "" : palette[value];
@@ -121,6 +136,7 @@
           grid.appendChild(button);
         });
       });
+      addSliceGuides(grid);
       widthOutput.value = String(width);
       heightOutput.value = String(height);
       widthInput.value = String(width);
@@ -240,6 +256,7 @@
 
   function initAll() {
     document.querySelectorAll("[data-pixel-editor]").forEach(initEditor);
+    document.querySelectorAll(".pixel-grid").forEach(addSliceGuides);
     document.querySelectorAll("[data-preview-state]").forEach(renderDesignPreview);
   }
 

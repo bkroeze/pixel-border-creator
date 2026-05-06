@@ -142,6 +142,7 @@ h2 {
 }
 
 .pixel-grid {
+  position: relative;
   display: grid;
   width: min(58vh, 100%);
   aspect-ratio: 1 / 1;
@@ -157,6 +158,29 @@ h2 {
   border: 0;
   padding: 0;
   cursor: crosshair;
+}
+
+.slice-guide {
+  position: absolute;
+  z-index: 3;
+  display: block;
+  pointer-events: none;
+  background: var(--accent);
+  box-shadow: 0 0 0 1px rgba(30, 26, 22, .88);
+}
+
+.slice-guide.vertical {
+  top: 0;
+  bottom: 0;
+  width: 5px;
+  transform: translateX(-50%);
+}
+
+.slice-guide.horizontal {
+  left: 0;
+  right: 0;
+  height: 5px;
+  transform: translateY(-50%);
 }
 
 .css-preview-wrap {
