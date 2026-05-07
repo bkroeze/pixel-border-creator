@@ -69,7 +69,10 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+PIXELBORDERS_LLM_MODEL = "gpt-5-mini"
 
 LOGIN_URL = "login"
 LOGIN_REDIRECT_URL = "pixelborders:editor"
 LOGOUT_REDIRECT_URL = "login"
+
+PIXELBORDERS_LLM_MODEL = "openrouter/openai/gpt-5-mini"

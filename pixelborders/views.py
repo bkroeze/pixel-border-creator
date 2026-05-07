@@ -4,10 +4,11 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.db.models import Q
-from django.http import HttpResponseBadRequest
+from django.http import HttpResponseBadRequest, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods, require_POST
 
+from .ai import generate_frame
 from .css import generate_css
 from .forms import PixelBorderDesignForm
 from .models import DEFAULT_PALETTE, PixelBorderDesign, default_pixels
@@ -127,3 +128,28 @@ def design_list(request):
         "pixelborders/_design_list.html",
         {"visible_designs": _visible_designs(request.user)},
     )
+
+
+@login_required
+@require_POST
+def generate_design(request):
+    try:
+        payload = json.loads(request.body.decode("utf-8"))
+    except json.JSONDecodeError:
+        return JsonResponse({"error": "Request JSON is invalid."}, status=400)
+
+    description = (payload.get("description") or "").strip()
+    if not description:
+        return JsonResponse({"error": "Describe the frame you want."}, status=400)
+
+    try:
+        size = int(payload.get("size") or 21)
+        generated = generate_frame(
+            description,
+            size,
+            current=payload.get("current"),
+            variation=bool(payload.get("variation")),
+        )
+    except Exception as exc:
+        return JsonResponse({"error": str(exc)}, status=502)
+    return JsonResponse(generated)

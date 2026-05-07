@@ -1,4 +1,5 @@
 import json
+from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.test import TestCase
@@ -91,6 +92,34 @@ class PixelBorderDesignViewTests(TestCase):
         )
         self.assertEqual(response.status_code, 422)
         self.assertFalse(PixelBorderDesign.objects.filter(owner=self.owner, name="Saved Border").exists())
+
+    @patch("pixelborders.views.generate_frame")
+    def test_generate_design_returns_generated_pixels(self, generate_frame):
+        generate_frame.return_value = {
+            "name": "AI Frame",
+            "width": 21,
+            "height": 21,
+            "palette": DEFAULT_PALETTE,
+            "pixels": default_pixels(),
+        }
+        self.client.login(username="owner", password="pw")
+        response = self.client.post(
+            reverse("pixelborders:generate"),
+            data=json.dumps({"description": "mossy frame", "size": 21, "variation": False}),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["name"], "AI Frame")
+        generate_frame.assert_called_once()
+
+    def test_generate_design_requires_description(self):
+        self.client.login(username="owner", password="pw")
+        response = self.client.post(
+            reverse("pixelborders:generate"),
+            data=json.dumps({"description": "", "size": 21}),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 400)
 
     def test_public_design_visible_in_list(self):
         PixelBorderDesign.objects.create(owner=self.owner, name="Public", is_public=True)

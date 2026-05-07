@@ -5,6 +5,10 @@
     return JSON.parse(form.dataset.state);
   }
 
+  function csrfToken(form) {
+    return form.querySelector('input[name="csrfmiddlewaretoken"]').value;
+  }
+
   function cssWithImage(css, imageUrl) {
     return css.replace("__PIXEL_BORDER_IMAGE__", imageUrl);
   }
@@ -190,7 +194,15 @@
     const importSizeLockIcon = importSizeLockButton.querySelector("i");
     const importSizeInput = form.querySelector("[data-import-size-input]");
     const importSizeOutput = form.querySelector("[data-import-size-output]");
+    const aiModal = form.querySelector("[data-ai-modal]");
+    const aiText = form.querySelector("[data-ai-text]");
+    const aiError = form.querySelector("[data-ai-error]");
+    const aiOpenButton = form.querySelector("[data-ai-open]");
+    const aiVariationButton = form.querySelector("[data-ai-variation]");
+    const aiCancelButton = form.querySelector("[data-ai-cancel]");
+    const aiApplyButton = form.querySelector("[data-ai-apply]");
     let importSizeOverrideEnabled = false;
+    let aiVariationMode = false;
 
     function serialize() {
       paletteInput.value = JSON.stringify(palette);
@@ -286,6 +298,22 @@
     function showImportError(message) {
       importError.textContent = message;
       importError.hidden = false;
+    }
+
+    function showAiError(message) {
+      aiError.textContent = message;
+      aiError.hidden = false;
+    }
+
+    function currentAiPayload() {
+      return {
+        name: nameInput.value,
+        palette,
+        pixels,
+        width: pixels[0].length,
+        height: pixels.length,
+        borderRepeat: repeatInput.value,
+      };
     }
 
     function updateImportSizeOverride() {
@@ -406,6 +434,56 @@
         updateSwatches();
       } catch (error) {
         showImportError(error.message);
+      }
+    }
+
+    async function generateAiBorder() {
+      aiError.hidden = true;
+      const description = aiText.value.trim();
+      if (!description) {
+        showAiError("Describe the frame you want.");
+        return;
+      }
+
+      aiApplyButton.disabled = true;
+      const originalLabel = aiApplyButton.textContent;
+      aiApplyButton.textContent = aiVariationMode ? "Varying..." : "Generating...";
+      try {
+        const response = await fetch(form.dataset.generateUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": csrfToken(form),
+          },
+          body: JSON.stringify({
+            description,
+            size: pixels[0].length,
+            variation: aiVariationMode,
+            current: currentAiPayload(),
+          }),
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || "Could not generate a frame.");
+
+        markAsNewDesign();
+        nameInput.value = data.name || "AI Border";
+        palette = data.palette;
+        pixels = normalizePixels(data.pixels, data.width, data.height);
+        active = TRANSPARENT;
+        activeSector = null;
+        copiedSector = null;
+        selectSectorMode = false;
+        sizeInput.value = String(data.width);
+        heightInput.value = String(data.height);
+        updateDesignSize(data.width, data.height);
+        aiModal.hidden = true;
+        renderGrid();
+        updateSwatches();
+      } catch (error) {
+        showAiError(error.message);
+      } finally {
+        aiApplyButton.disabled = false;
+        aiApplyButton.textContent = originalLabel;
       }
     }
 
@@ -560,6 +638,33 @@
     });
 
     importSizeInput.addEventListener("input", updateImportSizeOverride);
+
+    aiOpenButton.addEventListener("click", () => {
+      aiVariationMode = false;
+      aiError.hidden = true;
+      aiApplyButton.textContent = "Generate";
+      aiModal.hidden = false;
+      aiText.focus();
+    });
+
+    aiVariationButton.addEventListener("click", () => {
+      aiVariationMode = true;
+      aiError.hidden = true;
+      aiApplyButton.textContent = "Generate variation";
+      if (!aiText.value.trim()) aiText.value = `Make a variation of ${nameInput.value || "this frame"}.`;
+      aiModal.hidden = false;
+      aiText.focus();
+    });
+
+    aiCancelButton.addEventListener("click", () => {
+      aiModal.hidden = true;
+    });
+
+    aiModal.addEventListener("click", (event) => {
+      if (event.target === aiModal) aiModal.hidden = true;
+    });
+
+    aiApplyButton.addEventListener("click", generateAiBorder);
 
     grid.addEventListener("pointerdown", (event) => {
       if (!event.target.classList.contains("pixel-cell")) return;

@@ -7,6 +7,7 @@
     hx-target="#workspace"
     hx-swap="outerHTML"
     data-pixel-editor
+    data-generate-url="{% url 'pixelborders:generate' %}"
     data-state="{{ active_design_json|escape }}"
   >
     {% csrf_token %}
@@ -78,6 +79,12 @@
       <button class="ui icon button import-css" type="button" title="Import" data-import-open>
         <i class="upload icon"></i>
       </button>
+      <button class="ui icon button" type="button" title="Generate with AI" data-ai-open>
+        <i class="magic icon"></i>
+      </button>
+      <button class="ui icon button" type="button" title="Generate variation" data-ai-variation>
+        <i class="sync alternate icon"></i>
+      </button>
       <button class="ui icon button sector-select" type="button" title="Select sector" data-sector-select>
         <i class="mouse pointer icon"></i>
       </button>
@@ -97,6 +104,19 @@
         <button class="ui icon button" type="button" title="Paste" data-sector-action="paste" disabled>
           <i class="paste icon"></i>
         </button>
+      </div>
+    </div>
+
+    <div class="ai-modal" data-ai-modal hidden>
+      <div class="ai-dialog" role="dialog" aria-modal="true" aria-labelledby="ai-title">
+        <h3 id="ai-title">Generate Frame</h3>
+        <p>Describe the border frame you want. The generator uses the current image size.</p>
+        <textarea data-ai-text spellcheck="true" placeholder="Mossy stone corners with small gold cracks, transparent center"></textarea>
+        <p class="ai-error" data-ai-error hidden></p>
+        <div class="ai-actions">
+          <button class="ui button" type="button" data-ai-cancel>Cancel</button>
+          <button class="ui primary button" type="button" data-ai-apply>Generate</button>
+        </div>
       </div>
     </div>
 

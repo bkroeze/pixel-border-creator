@@ -117,7 +117,8 @@ h2 {
   opacity: .34 !important;
 }
 
-.import-modal {
+.import-modal,
+.ai-modal {
   position: fixed;
   inset: 0;
   z-index: 20;
@@ -127,11 +128,13 @@ h2 {
   background: rgba(30, 26, 22, .46);
 }
 
-.import-modal[hidden] {
+.import-modal[hidden],
+.ai-modal[hidden] {
   display: none;
 }
 
-.import-dialog {
+.import-dialog,
+.ai-dialog {
   width: min(720px, 100%);
   padding: 20px;
   border: 2px solid var(--line);
@@ -139,18 +142,21 @@ h2 {
   box-shadow: 8px 8px 0 var(--line);
 }
 
-.import-dialog h3 {
+.import-dialog h3,
+.ai-dialog h3 {
   margin: 0 0 8px;
   font-size: 1.3rem;
   text-transform: uppercase;
 }
 
-.import-dialog p {
+.import-dialog p,
+.ai-dialog p {
   margin-bottom: 12px;
   line-height: 1.45;
 }
 
-.import-dialog textarea {
+.import-dialog textarea,
+.ai-dialog textarea {
   width: 100%;
   min-height: 220px;
   margin-bottom: 12px;
@@ -182,12 +188,14 @@ h2 {
   opacity: .45;
 }
 
-.import-error {
+.import-error,
+.ai-error {
   color: #a32118;
   font-family: "Courier New", monospace;
 }
 
-.import-actions {
+.import-actions,
+.ai-actions {
   display: flex;
   justify-content: flex-end;
   gap: 8px;
