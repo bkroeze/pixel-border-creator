@@ -220,11 +220,20 @@ h2 {
 
 .size-controls {
   display: grid;
-  grid-template-columns: auto minmax(120px, 1fr);
+  grid-template-columns: auto minmax(120px, 1fr) auto;
   gap: 10px;
   align-items: center;
   margin-bottom: 18px;
   font-family: "Courier New", monospace;
+}
+
+.scale-controls {
+  display: flex;
+  gap: 6px;
+}
+
+.scale-controls .button {
+  min-width: 44px;
 }
 
 .editor-layout {
@@ -366,6 +375,10 @@ h2 {
   .editor-layout,
   .size-controls {
     grid-template-columns: 1fr;
+  }
+
+  .scale-controls {
+    flex-wrap: wrap;
   }
 
   .pixel-grid {

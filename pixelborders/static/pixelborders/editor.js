@@ -168,6 +168,7 @@
     const sizeInput = form.querySelector("[data-size-input]");
     const heightInput = form.querySelector("[data-height-input]");
     const sizeOutput = form.querySelector("[data-size-output]");
+    const scaleButtons = form.querySelectorAll("[data-scale-grid]");
     const cssPreview = form.querySelector(".css-preview");
     const canvas = form.querySelector(".render-canvas");
     const ctx = canvas.getContext("2d");
@@ -248,6 +249,20 @@
         const y = Number(cell.dataset.y);
         const sector = sectorForCell(x, y, pixels[0].length, pixels.length);
         cell.classList.toggle("sector-active", sameSector(activeSector, sector));
+      });
+    }
+
+    function updateScaleTools() {
+      const width = pixels[0].length;
+      const height = pixels.length;
+      scaleButtons.forEach((button) => {
+        const scale = Number(button.dataset.scaleGrid);
+        let nextWidth = Math.round(width * scale);
+        let nextHeight = Math.round(height * scale);
+        let canScale = nextWidth >= 5 && nextWidth <= 100 && nextHeight >= 5 && nextHeight <= 100;
+        if (scale === 0.5) canScale = canScale && width % 2 === 0 && height % 2 === 0;
+        if (scale < 0.5) canScale = canScale && width % 3 === 0 && height % 3 === 0;
+        button.disabled = !canScale;
       });
     }
 
@@ -414,6 +429,32 @@
       serialize();
       updateCss();
       updateSectorTools();
+      updateScaleTools();
+    }
+
+    function updateDesignSize(width, height) {
+      state.width = width;
+      state.height = height;
+      const slice = Math.max(1, Math.floor(Math.min(width, height) / 3));
+      state.css = state.css.replace(/border-width: \d+px;/, `border-width: ${slice}px;`)
+        .replace(/border-image-slice: \d+ fill;/, `border-image-slice: ${slice} fill;`)
+        .replace(/border-image-width: \d+px;/, `border-image-width: ${slice}px;`);
+    }
+
+    function resamplePixels(sourcePixels, width, height) {
+      const sourceHeight = sourcePixels.length;
+      const sourceWidth = sourcePixels[0].length;
+      const next = [];
+      for (let y = 0; y < height; y += 1) {
+        const sourceY = Math.min(sourceHeight - 1, Math.floor((y * sourceHeight) / height));
+        const row = [];
+        for (let x = 0; x < width; x += 1) {
+          const sourceX = Math.min(sourceWidth - 1, Math.floor((x * sourceWidth) / width));
+          row.push(sourcePixels[sourceY][sourceX]);
+        }
+        next.push(row);
+      }
+      return next;
     }
 
     function setPixel(button) {
@@ -463,15 +504,25 @@
 
     function resize() {
       pixels = normalizePixels(pixels, Number(sizeInput.value), Number(sizeInput.value));
-      state.width = Number(sizeInput.value);
-      state.height = Number(sizeInput.value);
-      state.css = state.css.replace(/border-width: \d+px;/, `border-width: ${Math.max(1, Math.floor(Math.min(state.width, state.height) / 3))}px;`)
-        .replace(/border-image-slice: \d+ fill;/, `border-image-slice: ${Math.max(1, Math.floor(Math.min(state.width, state.height) / 3))} fill;`)
-        .replace(/border-image-width: \d+px;/, `border-image-width: ${Math.max(1, Math.floor(Math.min(state.width, state.height) / 3))}px;`);
+      updateDesignSize(Number(sizeInput.value), Number(sizeInput.value));
       renderGrid();
     }
 
     sizeInput.addEventListener("input", resize);
+    scaleButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        const scale = Number(button.dataset.scaleGrid);
+        const nextWidth = Math.round(pixels[0].length * scale);
+        const nextHeight = Math.round(pixels.length * scale);
+        pixels = resamplePixels(pixels, nextWidth, nextHeight);
+        activeSector = null;
+        selectSectorMode = false;
+        sizeInput.value = String(nextWidth);
+        heightInput.value = String(nextHeight);
+        updateDesignSize(nextWidth, nextHeight);
+        renderGrid();
+      });
+    });
     nameInput.addEventListener("input", updateCss);
     repeatInput.addEventListener("change", () => {
       state.css = state.css.replace(/border-image-repeat: (stretch|repeat|round);/, `border-image-repeat: ${repeatInput.value};`);

@@ -120,6 +120,11 @@
     <div class="size-controls">
       <label>Size <output data-size-output>{{ active_design.width }}</output></label>
       <input name="width" type="range" min="5" max="100" value="{{ active_design.width }}" data-size-input>
+      <div class="scale-controls" aria-label="Scale pixel grid">
+        <button class="ui button" type="button" data-scale-grid="2">2x</button>
+        <button class="ui button" type="button" data-scale-grid="0.5">1/2</button>
+        <button class="ui button" type="button" data-scale-grid="0.3333333333333333">1/3</button>
+      </div>
       <input name="height" type="hidden" value="{{ active_design.width }}" data-height-input>
     </div>
 
