@@ -163,6 +163,7 @@
     let copiedSector = null;
 
     const grid = form.querySelector(".pixel-grid");
+    const designIdInput = form.querySelector('input[name="design_id"]');
     const paletteInput = form.querySelector('input[name="palette_json"]');
     const pixelsInput = form.querySelector('input[name="pixels_json"]');
     const sizeInput = form.querySelector("[data-size-input]");
@@ -175,6 +176,7 @@
     const lockButton = form.querySelector(".palette-lock");
     const lockIcon = lockButton.querySelector("i");
     const nameInput = form.querySelector('input[name="name"]');
+    const newDesignButton = form.querySelector("[data-new-design]");
     const repeatInput = form.querySelector("[data-repeat-input]");
     const sectorSelectButton = form.querySelector("[data-sector-select]");
     const sectorActionButtons = form.querySelectorAll("[data-sector-action]");
@@ -381,6 +383,7 @@
       try {
         const overrideSlice = importSizeOverrideEnabled ? Number(importSizeInput.value) : null;
         const imported = await decodeImportImage(parsed.imageUrl, parsed.slice, overrideSlice);
+        markAsNewDesign();
         if (parsed.name) nameInput.value = parsed.name;
         if (parsed.repeat) {
           repeatInput.value = parsed.repeat;
@@ -430,6 +433,10 @@
       updateCss();
       updateSectorTools();
       updateScaleTools();
+    }
+
+    function markAsNewDesign() {
+      designIdInput.value = "";
     }
 
     function updateDesignSize(width, height) {
@@ -494,6 +501,24 @@
 
     lockButton.addEventListener("click", () => {
       unlocked = !unlocked;
+      updateSwatches();
+    });
+
+    newDesignButton.addEventListener("click", () => {
+      markAsNewDesign();
+      nameInput.value = "";
+      repeatInput.value = "stretch";
+      state.css = state.css.replace(/border-image-repeat: (stretch|repeat|round);/, "border-image-repeat: stretch;");
+      palette = ["#2f2a22", "#f2c14e", "#3f88c5"];
+      pixels = normalizePixels([], 21, 21);
+      active = TRANSPARENT;
+      activeSector = null;
+      copiedSector = null;
+      selectSectorMode = false;
+      sizeInput.value = "21";
+      heightInput.value = "21";
+      updateDesignSize(21, 21);
+      renderGrid();
       updateSwatches();
     });
 

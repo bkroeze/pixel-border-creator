@@ -73,8 +73,10 @@ def save_design(request):
     instance = None
     if design_id:
         instance = get_object_or_404(PixelBorderDesign, pk=design_id)
-        if not instance.can_edit(request.user):
+        if not instance.is_visible_to(request.user):
             raise PermissionDenied
+        if not instance.can_edit(request.user) or instance.name != request.POST.get("name"):
+            instance = None
 
     form = PixelBorderDesignForm(request.POST, owner=request.user, instance=instance)
     if not form.is_valid():

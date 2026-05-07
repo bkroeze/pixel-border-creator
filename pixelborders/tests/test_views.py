@@ -41,6 +41,47 @@ class PixelBorderDesignViewTests(TestCase):
         self.assertEqual(PixelBorderDesign.objects.get(owner=self.owner, name="Saved Border").border_repeat, "round")
         self.assertContains(response, "Visible Designs")
 
+    def test_save_defaults_blank_name(self):
+        self.client.login(username="owner", password="pw")
+        response = self.client.post(reverse("pixelborders:save"), self.payload(name=""))
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(PixelBorderDesign.objects.filter(owner=self.owner, name="Untitled Border").exists())
+
+    def test_save_updates_owned_design_when_name_is_unchanged(self):
+        design = PixelBorderDesign.objects.create(owner=self.owner, name="Owned", border_repeat="stretch")
+        self.client.login(username="owner", password="pw")
+        response = self.client.post(
+            reverse("pixelborders:save"),
+            self.payload(design_id=str(design.pk), name="Owned", border_repeat="round"),
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(PixelBorderDesign.objects.count(), 1)
+        design.refresh_from_db()
+        self.assertEqual(design.border_repeat, "round")
+
+    def test_save_creates_copy_when_owned_design_name_changes(self):
+        design = PixelBorderDesign.objects.create(owner=self.owner, name="Owned", border_repeat="stretch")
+        self.client.login(username="owner", password="pw")
+        response = self.client.post(
+            reverse("pixelborders:save"),
+            self.payload(design_id=str(design.pk), name="Renamed", border_repeat="round"),
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(PixelBorderDesign.objects.filter(owner=self.owner, name="Owned", border_repeat="stretch").exists())
+        self.assertTrue(PixelBorderDesign.objects.filter(owner=self.owner, name="Renamed", border_repeat="round").exists())
+
+    def test_save_creates_user_copy_for_public_design_owned_by_someone_else(self):
+        design = PixelBorderDesign.objects.create(owner=self.owner, name="Public", is_public=True)
+        self.client.login(username="viewer", password="pw")
+        response = self.client.post(
+            reverse("pixelborders:save"),
+            self.payload(design_id=str(design.pk), name="Public", border_repeat="round"),
+        )
+        self.assertEqual(response.status_code, 302)
+        design.refresh_from_db()
+        self.assertEqual(design.border_repeat, "stretch")
+        self.assertTrue(PixelBorderDesign.objects.filter(owner=self.viewer, name="Public", border_repeat="round").exists())
+
     def test_save_requires_square_design(self):
         self.client.login(username="owner", password="pw")
         response = self.client.post(

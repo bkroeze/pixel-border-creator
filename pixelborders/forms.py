@@ -63,6 +63,7 @@ class PixelBorderDesignForm(forms.ModelForm):
     def __init__(self, *args, owner=None, **kwargs):
         self.owner = owner
         super().__init__(*args, **kwargs)
+        self.fields["name"].required = False
 
     def _post_clean(self):
         self.instance = construct_instance(self, self.instance, self._meta.fields, self._meta.exclude)
@@ -70,6 +71,7 @@ class PixelBorderDesignForm(forms.ModelForm):
     def save(self, commit=True):
         instance = super().save(commit=False)
         instance.owner = self.owner
+        instance.name = instance.name or "Untitled Border"
         instance.palette = self.cleaned_data["palette_json"]
         instance.pixels = self.cleaned_data["pixels_json"]
         if commit:
