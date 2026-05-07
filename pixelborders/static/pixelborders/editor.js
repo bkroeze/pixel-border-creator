@@ -49,6 +49,37 @@
     return left && right && left.col === right.col && left.row === right.row;
   }
 
+  function parseBorderImport(css) {
+    const classMatch = css.match(/\.([_a-zA-Z][\w-]*)\s*\{/);
+    const repeatMatch = css.match(/border-image-repeat\s*:\s*(stretch|repeat|round)\s*;/i);
+    const sourceMatch = css.match(/border-image-source\s*:\s*url\(\s*(['"]?)(.*?)\1\s*\)/i)
+      || css.match(/border-image\s*:\s*url\(\s*(['"]?)(.*?)\1\s*\)/i);
+    return {
+      name: classMatch ? classMatch[1] : null,
+      repeat: repeatMatch ? repeatMatch[1].toLowerCase() : null,
+      imageUrl: sourceMatch ? sourceMatch[2] : null,
+    };
+  }
+
+  function rgbToHex(r, g, b) {
+    return `#${[r, g, b].map((value) => value.toString(16).padStart(2, "0")).join("")}`;
+  }
+
+  function nearestPaletteIndex(color, colors) {
+    let bestIndex = 0;
+    let bestDistance = Infinity;
+    colors.forEach((candidate, index) => {
+      const distance = ((color[0] - candidate[0]) ** 2)
+        + ((color[1] - candidate[1]) ** 2)
+        + ((color[2] - candidate[2]) ** 2);
+      if (distance < bestDistance) {
+        bestDistance = distance;
+        bestIndex = index;
+      }
+    });
+    return bestIndex;
+  }
+
   function addSliceGuides(grid) {
     grid.querySelectorAll(".slice-guide").forEach((guide) => guide.remove());
     [1 / 3, 2 / 3].forEach((position) => {
@@ -99,6 +130,12 @@
     const repeatInput = form.querySelector("[data-repeat-input]");
     const sectorSelectButton = form.querySelector("[data-sector-select]");
     const sectorActionButtons = form.querySelectorAll("[data-sector-action]");
+    const importModal = form.querySelector("[data-import-modal]");
+    const importText = form.querySelector("[data-import-text]");
+    const importError = form.querySelector("[data-import-error]");
+    const importOpenButton = form.querySelector("[data-import-open]");
+    const importCancelButton = form.querySelector("[data-import-cancel]");
+    const importApplyButton = form.querySelector("[data-import-apply]");
 
     function serialize() {
       paletteInput.value = JSON.stringify(palette);
@@ -175,6 +212,97 @@
     function activeSectorBounds() {
       if (!activeSector) return null;
       return sectorBounds(pixels[0].length, pixels.length, activeSector);
+    }
+
+    function showImportError(message) {
+      importError.textContent = message;
+      importError.hidden = false;
+    }
+
+    function decodeImportImage(imageUrl) {
+      return new Promise((resolve, reject) => {
+        const image = new Image();
+        image.onload = () => {
+          const size = Math.max(5, Math.min(100, Math.max(image.naturalWidth, image.naturalHeight)));
+          const importCanvas = document.createElement("canvas");
+          importCanvas.width = size;
+          importCanvas.height = size;
+          const importContext = importCanvas.getContext("2d");
+          importContext.imageSmoothingEnabled = false;
+          importContext.clearRect(0, 0, size, size);
+          importContext.drawImage(image, 0, 0, size, size);
+          const data = importContext.getImageData(0, 0, size, size).data;
+          const counts = new Map();
+
+          for (let index = 0; index < data.length; index += 4) {
+            if (data[index + 3] < 128) continue;
+            const key = `${data[index]},${data[index + 1]},${data[index + 2]}`;
+            counts.set(key, (counts.get(key) || 0) + 1);
+          }
+
+          const colorTriples = Array.from(counts.entries())
+            .sort((left, right) => right[1] - left[1])
+            .slice(0, 3)
+            .map(([key]) => key.split(",").map(Number));
+          while (colorTriples.length < 3) colorTriples.push([47, 42, 34]);
+
+          const importedPixels = [];
+          for (let y = 0; y < size; y += 1) {
+            const row = [];
+            for (let x = 0; x < size; x += 1) {
+              const index = (y * size + x) * 4;
+              if (data[index + 3] < 128) {
+                row.push(TRANSPARENT);
+              } else {
+                row.push(nearestPaletteIndex([data[index], data[index + 1], data[index + 2]], colorTriples));
+              }
+            }
+            importedPixels.push(row);
+          }
+
+          resolve({
+            size,
+            palette: colorTriples.map(([r, g, b]) => rgbToHex(r, g, b)),
+            pixels: importedPixels,
+          });
+        };
+        image.onerror = () => reject(new Error("Could not decode the border image data URL."));
+        image.src = imageUrl;
+      });
+    }
+
+    async function importBorderCss() {
+      importError.hidden = true;
+      const parsed = parseBorderImport(importText.value);
+      if (!parsed.imageUrl) {
+        showImportError("No border-image-source or border-image URL was found.");
+        return;
+      }
+
+      try {
+        const imported = await decodeImportImage(parsed.imageUrl);
+        if (parsed.name) nameInput.value = parsed.name;
+        if (parsed.repeat) {
+          repeatInput.value = parsed.repeat;
+          state.css = state.css.replace(/border-image-repeat: (stretch|repeat|round);/, `border-image-repeat: ${parsed.repeat};`);
+        }
+        palette = imported.palette;
+        pixels = imported.pixels;
+        activeSector = null;
+        selectSectorMode = false;
+        sizeInput.value = String(imported.size);
+        heightInput.value = String(imported.size);
+        state.width = imported.size;
+        state.height = imported.size;
+        state.css = state.css.replace(/border-width: \d+px;/, `border-width: ${Math.max(1, Math.floor(imported.size / 3))}px;`)
+          .replace(/border-image-slice: \d+ fill;/, `border-image-slice: ${Math.max(1, Math.floor(imported.size / 3))} fill;`)
+          .replace(/border-image-width: \d+px;/, `border-image-width: ${Math.max(1, Math.floor(imported.size / 3))}px;`);
+        importModal.hidden = true;
+        renderGrid();
+        updateSwatches();
+      } catch (error) {
+        showImportError(error.message);
+      }
     }
 
     function renderGrid() {
@@ -340,6 +468,19 @@
         renderGrid();
       });
     });
+
+    importOpenButton.addEventListener("click", () => {
+      importError.hidden = true;
+      importModal.hidden = false;
+      importText.focus();
+    });
+    importCancelButton.addEventListener("click", () => {
+      importModal.hidden = true;
+    });
+    importModal.addEventListener("click", (event) => {
+      if (event.target === importModal) importModal.hidden = true;
+    });
+    importApplyButton.addEventListener("click", importBorderCss);
 
     cssPreview.addEventListener("click", async () => {
       await navigator.clipboard.writeText(cssPreview.textContent);

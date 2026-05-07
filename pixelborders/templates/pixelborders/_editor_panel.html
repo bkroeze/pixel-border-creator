@@ -72,6 +72,9 @@
       <button class="ui icon labeled button clear-grid" type="button">
         <i class="eraser icon"></i>Clear
       </button>
+      <button class="ui icon button import-css" type="button" title="Import" data-import-open>
+        <i class="upload icon"></i>
+      </button>
       <button class="ui icon button sector-select" type="button" title="Select sector" data-sector-select>
         <i class="mouse pointer icon"></i>
       </button>
@@ -91,6 +94,19 @@
         <button class="ui icon button" type="button" title="Paste" data-sector-action="paste" disabled>
           <i class="paste icon"></i>
         </button>
+      </div>
+    </div>
+
+    <div class="import-modal" data-import-modal hidden>
+      <div class="import-dialog" role="dialog" aria-modal="true" aria-labelledby="import-title">
+        <h3 id="import-title">Import Border CSS</h3>
+        <p>Paste a CSS fragment containing a border image data URL. The importer reads the first class name, an explicit border-image-repeat value if present, and the PNG from border-image-source or border-image.</p>
+        <textarea data-import-text spellcheck="false" placeholder='.broider { border-image: url("data:image/png;base64,...") 28 / 28px / 0 round; }'></textarea>
+        <p class="import-error" data-import-error hidden></p>
+        <div class="import-actions">
+          <button class="ui button" type="button" data-import-cancel>Cancel</button>
+          <button class="ui primary button" type="button" data-import-apply>Import</button>
+        </div>
       </div>
     </div>
 

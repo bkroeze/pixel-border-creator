@@ -117,6 +117,60 @@ h2 {
   opacity: .34 !important;
 }
 
+.import-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(30, 26, 22, .46);
+}
+
+.import-modal[hidden] {
+  display: none;
+}
+
+.import-dialog {
+  width: min(720px, 100%);
+  padding: 20px;
+  border: 2px solid var(--line);
+  background: var(--panel);
+  box-shadow: 8px 8px 0 var(--line);
+}
+
+.import-dialog h3 {
+  margin: 0 0 8px;
+  font-size: 1.3rem;
+  text-transform: uppercase;
+}
+
+.import-dialog p {
+  margin-bottom: 12px;
+  line-height: 1.45;
+}
+
+.import-dialog textarea {
+  width: 100%;
+  min-height: 220px;
+  margin-bottom: 12px;
+  padding: 12px;
+  resize: vertical;
+  border: 2px solid var(--line);
+  font-family: "Courier New", monospace;
+}
+
+.import-error {
+  color: #a32118;
+  font-family: "Courier New", monospace;
+}
+
+.import-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
 .swatch {
   width: 42px;
   height: 42px;
