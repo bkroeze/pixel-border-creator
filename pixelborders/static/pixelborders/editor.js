@@ -52,11 +52,15 @@
   function parseBorderImport(css) {
     const classMatch = css.match(/\.([_a-zA-Z][\w-]*)\s*\{/);
     const repeatMatch = css.match(/border-image-repeat\s*:\s*(stretch|repeat|round)\s*;/i);
+    const shorthandRepeatMatch = css.match(/border-image\s*:[^;]*\b(stretch|repeat|round)\b\s*;/i);
+    const sliceMatch = css.match(/border-image-slice\s*:\s*(\d+)/i)
+      || css.match(/border-image\s*:[^;]*\)\s*(\d+)/i);
     const sourceMatch = css.match(/border-image-source\s*:\s*url\(\s*(['"]?)(.*?)\1\s*\)/i)
       || css.match(/border-image\s*:\s*url\(\s*(['"]?)(.*?)\1\s*\)/i);
     return {
       name: classMatch ? classMatch[1] : null,
-      repeat: repeatMatch ? repeatMatch[1].toLowerCase() : null,
+      repeat: repeatMatch ? repeatMatch[1].toLowerCase() : shorthandRepeatMatch?.[1].toLowerCase() ?? null,
+      slice: sliceMatch ? Number(sliceMatch[1]) : null,
       imageUrl: sourceMatch ? sourceMatch[2] : null,
     };
   }
@@ -78,6 +82,49 @@
       }
     });
     return bestIndex;
+  }
+
+  function pixelKey(data, width, x, y) {
+    const index = (y * width + x) * 4;
+    if (data[index + 3] < 128) return "transparent";
+    return `${data[index]},${data[index + 1]},${data[index + 2]}`;
+  }
+
+  function isUniformBlockScale(data, width, height, scale) {
+    if (width % scale !== 0 || height % scale !== 0) return false;
+    for (let y = 0; y < height; y += scale) {
+      for (let x = 0; x < width; x += scale) {
+        const key = pixelKey(data, width, x, y);
+        for (let blockY = y; blockY < y + scale; blockY += 1) {
+          for (let blockX = x; blockX < x + scale; blockX += 1) {
+            if (pixelKey(data, width, blockX, blockY) !== key) return false;
+          }
+        }
+      }
+    }
+    return true;
+  }
+
+  function inferCssExportScale(width, height, cssSlice) {
+    if (!cssSlice || width !== height || width !== cssSlice * 3) return null;
+    for (const scale of [8, 6, 5, 4, 3, 2]) {
+      if (cssSlice % scale === 0 && width / scale >= 5 && width / scale <= 100) return scale;
+    }
+    return null;
+  }
+
+  function inferImportScale(data, width, height, cssSlice) {
+    const cssScale = inferCssExportScale(width, height, cssSlice);
+    if (cssScale) return cssScale;
+
+    const commonScales = [8, 6, 5, 4, 3, 2];
+    const candidates = cssSlice
+      ? commonScales.filter((scale) => cssSlice % scale === 0)
+      : commonScales;
+    for (const scale of candidates) {
+      if (isUniformBlockScale(data, width, height, scale)) return scale;
+    }
+    return 1;
   }
 
   function addSliceGuides(grid) {
@@ -136,6 +183,11 @@
     const importOpenButton = form.querySelector("[data-import-open]");
     const importCancelButton = form.querySelector("[data-import-cancel]");
     const importApplyButton = form.querySelector("[data-import-apply]");
+    const importSizeLockButton = form.querySelector("[data-import-size-lock]");
+    const importSizeLockIcon = importSizeLockButton.querySelector("i");
+    const importSizeInput = form.querySelector("[data-import-size-input]");
+    const importSizeOutput = form.querySelector("[data-import-size-output]");
+    let importSizeOverrideEnabled = false;
 
     function serialize() {
       paletteInput.value = JSON.stringify(palette);
@@ -219,25 +271,54 @@
       importError.hidden = false;
     }
 
-    function decodeImportImage(imageUrl) {
+    function updateImportSizeOverride() {
+      importSizeInput.disabled = !importSizeOverrideEnabled;
+      importSizeLockIcon.className = importSizeOverrideEnabled ? "unlock icon" : "lock icon";
+      importSizeLockButton.title = importSizeOverrideEnabled ? "Use auto-inferred import size" : "Override import size";
+      importSizeLockButton.setAttribute("aria-pressed", String(!importSizeOverrideEnabled));
+      importSizeOutput.value = importSizeInput.value;
+    }
+
+    function decodeImportImage(imageUrl, cssSlice, overrideSlice) {
       return new Promise((resolve, reject) => {
         const image = new Image();
         image.onload = () => {
-          const size = Math.max(5, Math.min(100, Math.max(image.naturalWidth, image.naturalHeight)));
+          const sourceWidth = image.naturalWidth;
+          const sourceHeight = image.naturalHeight;
+          if (sourceWidth > 1000 || sourceHeight > 1000) {
+            reject(new Error("Imported image is too large."));
+            return;
+          }
           const importCanvas = document.createElement("canvas");
-          importCanvas.width = size;
-          importCanvas.height = size;
+          importCanvas.width = sourceWidth;
+          importCanvas.height = sourceHeight;
           const importContext = importCanvas.getContext("2d");
           importContext.imageSmoothingEnabled = false;
-          importContext.clearRect(0, 0, size, size);
-          importContext.drawImage(image, 0, 0, size, size);
-          const data = importContext.getImageData(0, 0, size, size).data;
+          importContext.clearRect(0, 0, sourceWidth, sourceHeight);
+          importContext.drawImage(image, 0, 0);
+          const data = importContext.getImageData(0, 0, sourceWidth, sourceHeight).data;
+          const scale = overrideSlice ? sourceWidth / (overrideSlice * 3) : inferImportScale(data, sourceWidth, sourceHeight, cssSlice);
+          if (!Number.isFinite(scale) || scale <= 0) {
+            reject(new Error("Import size override is not valid for this image."));
+            return;
+          }
+          const width = overrideSlice
+            ? Math.max(5, Math.min(100, overrideSlice * 3))
+            : Math.max(5, Math.min(100, Math.floor(sourceWidth / scale)));
+          const height = overrideSlice
+            ? Math.max(5, Math.min(100, Math.round(sourceHeight / scale)))
+            : Math.max(5, Math.min(100, Math.floor(sourceHeight / scale)));
           const counts = new Map();
 
-          for (let index = 0; index < data.length; index += 4) {
-            if (data[index + 3] < 128) continue;
-            const key = `${data[index]},${data[index + 1]},${data[index + 2]}`;
-            counts.set(key, (counts.get(key) || 0) + 1);
+          for (let y = 0; y < height; y += 1) {
+            for (let x = 0; x < width; x += 1) {
+              const sourceX = Math.min(sourceWidth - 1, Math.floor(x * scale));
+              const sourceY = Math.min(sourceHeight - 1, Math.floor(y * scale));
+              const index = (sourceY * sourceWidth + sourceX) * 4;
+              if (data[index + 3] < 128) continue;
+              const key = `${data[index]},${data[index + 1]},${data[index + 2]}`;
+              counts.set(key, (counts.get(key) || 0) + 1);
+            }
           }
 
           const colorTriples = Array.from(counts.entries())
@@ -247,10 +328,12 @@
           while (colorTriples.length < 3) colorTriples.push([47, 42, 34]);
 
           const importedPixels = [];
-          for (let y = 0; y < size; y += 1) {
+          for (let y = 0; y < height; y += 1) {
             const row = [];
-            for (let x = 0; x < size; x += 1) {
-              const index = (y * size + x) * 4;
+            for (let x = 0; x < width; x += 1) {
+              const sourceX = Math.min(sourceWidth - 1, Math.floor(x * scale));
+              const sourceY = Math.min(sourceHeight - 1, Math.floor(y * scale));
+              const index = (sourceY * sourceWidth + sourceX) * 4;
               if (data[index + 3] < 128) {
                 row.push(TRANSPARENT);
               } else {
@@ -261,7 +344,8 @@
           }
 
           resolve({
-            size,
+            width,
+            height,
             palette: colorTriples.map(([r, g, b]) => rgbToHex(r, g, b)),
             pixels: importedPixels,
           });
@@ -280,7 +364,8 @@
       }
 
       try {
-        const imported = await decodeImportImage(parsed.imageUrl);
+        const overrideSlice = importSizeOverrideEnabled ? Number(importSizeInput.value) : null;
+        const imported = await decodeImportImage(parsed.imageUrl, parsed.slice, overrideSlice);
         if (parsed.name) nameInput.value = parsed.name;
         if (parsed.repeat) {
           repeatInput.value = parsed.repeat;
@@ -290,13 +375,14 @@
         pixels = imported.pixels;
         activeSector = null;
         selectSectorMode = false;
-        sizeInput.value = String(imported.size);
-        heightInput.value = String(imported.size);
-        state.width = imported.size;
-        state.height = imported.size;
-        state.css = state.css.replace(/border-width: \d+px;/, `border-width: ${Math.max(1, Math.floor(imported.size / 3))}px;`)
-          .replace(/border-image-slice: \d+ fill;/, `border-image-slice: ${Math.max(1, Math.floor(imported.size / 3))} fill;`)
-          .replace(/border-image-width: \d+px;/, `border-image-width: ${Math.max(1, Math.floor(imported.size / 3))}px;`);
+        sizeInput.value = String(imported.width);
+        heightInput.value = String(imported.height);
+        state.width = imported.width;
+        state.height = imported.height;
+        const importedSlice = Math.max(1, Math.floor(Math.min(imported.width, imported.height) / 3));
+        state.css = state.css.replace(/border-width: \d+px;/, `border-width: ${importedSlice}px;`)
+          .replace(/border-image-slice: \d+ fill;/, `border-image-slice: ${importedSlice} fill;`)
+          .replace(/border-image-width: \d+px;/, `border-image-width: ${importedSlice}px;`);
         importModal.hidden = true;
         renderGrid();
         updateSwatches();
@@ -324,7 +410,7 @@
       addSliceGuides(grid);
       sizeOutput.value = String(width);
       sizeInput.value = String(width);
-      heightInput.value = String(width);
+      heightInput.value = String(height);
       serialize();
       updateCss();
       updateSectorTools();
@@ -391,6 +477,13 @@
       state.css = state.css.replace(/border-image-repeat: (stretch|repeat|round);/, `border-image-repeat: ${repeatInput.value};`);
       updateCss();
     });
+
+    importSizeLockButton.addEventListener("click", () => {
+      importSizeOverrideEnabled = !importSizeOverrideEnabled;
+      updateImportSizeOverride();
+    });
+
+    importSizeInput.addEventListener("input", updateImportSizeOverride);
 
     grid.addEventListener("pointerdown", (event) => {
       if (!event.target.classList.contains("pixel-cell")) return;
@@ -471,6 +564,9 @@
 
     importOpenButton.addEventListener("click", () => {
       importError.hidden = true;
+      importSizeOverrideEnabled = false;
+      importSizeInput.value = String(Math.max(1, Math.floor(Math.min(state.width, state.height) / 3)));
+      updateImportSizeOverride();
       importModal.hidden = false;
       importText.focus();
     });

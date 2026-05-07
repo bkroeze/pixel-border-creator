@@ -102,6 +102,13 @@
         <h3 id="import-title">Import Border CSS</h3>
         <p>Paste a CSS fragment containing a border image data URL. The importer reads the first class name, an explicit border-image-repeat value if present, and the PNG from border-image-source or border-image.</p>
         <textarea data-import-text spellcheck="false" placeholder='.broider { border-image: url("data:image/png;base64,...") 28 / 28px / 0 round; }'></textarea>
+        <div class="import-size-override">
+          <button class="ui icon button" type="button" title="Auto-infer import size" data-import-size-lock aria-pressed="true">
+            <i class="lock icon"></i>
+          </button>
+          <label for="import-slice-size">Slice <output data-import-size-output>7</output></label>
+          <input id="import-slice-size" type="range" min="1" max="33" value="7" data-import-size-input disabled>
+        </div>
         <p class="import-error" data-import-error hidden></p>
         <div class="import-actions">
           <button class="ui button" type="button" data-import-cancel>Cancel</button>

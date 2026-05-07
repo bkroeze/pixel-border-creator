@@ -160,6 +160,28 @@ h2 {
   font-family: "Courier New", monospace;
 }
 
+.import-size-override {
+  display: grid;
+  grid-template-columns: 42px max-content 1fr;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.import-size-override label {
+  margin: 0;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.import-size-override input {
+  width: 100%;
+}
+
+.import-size-override input:disabled {
+  opacity: .45;
+}
+
 .import-error {
   color: #a32118;
   font-family: "Courier New", monospace;
