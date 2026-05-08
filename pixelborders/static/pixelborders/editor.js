@@ -801,11 +801,20 @@
     if (button.dataset.ready === "true") return;
     button.dataset.ready = "true";
     button.addEventListener("click", async () => {
-      const cssNode = button.closest(".design-list")?.querySelector('script[type="application/json"]');
-      const css = cssNode ? JSON.parse(cssNode.textContent) : "";
-      await navigator.clipboard.writeText(css);
-      if (window.$ && $.toast) {
-        $.toast({ message: "Visible designs CSS copied.", class: "success" });
+      try {
+        const response = await fetch(button.dataset.cssUrl, {
+          headers: { Accept: "text/css" },
+        });
+        if (!response.ok) throw new Error("Could not fetch visible designs CSS.");
+        const css = await response.text();
+        await navigator.clipboard.writeText(css);
+        if (window.$ && $.toast) {
+          $.toast({ message: "Visible designs CSS copied.", class: "success" });
+        }
+      } catch (error) {
+        if (window.$ && $.toast) {
+          $.toast({ message: error.message, class: "error" });
+        }
       }
     });
   }

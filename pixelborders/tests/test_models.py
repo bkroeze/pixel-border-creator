@@ -2,7 +2,7 @@ from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.test import TestCase
 
-from pixelborders.css import generate_css
+from pixelborders.css import generate_css, generate_css_with_image, render_png_data_url
 from pixelborders.models import PixelBorderDesign, default_pixels
 
 
@@ -55,6 +55,15 @@ class PixelBorderDesignModelTests(TestCase):
         self.assertIn("border-image-source", css)
         self.assertIn("border-image-slice: 7 fill", css)
         self.assertIn("border-image-repeat: round", css)
+
+    def test_png_data_url_generation(self):
+        pixels = default_pixels()
+        pixels[0][0] = 0
+        design = PixelBorderDesign.objects.create(owner=self.user, name="Image Frame", pixels=pixels)
+        data_url = render_png_data_url(design)
+        self.assertTrue(data_url.startswith("data:image/png;base64,"))
+        self.assertIn(data_url, generate_css_with_image(design))
+        self.assertNotIn("__PIXEL_BORDER_IMAGE__", generate_css_with_image(design))
 
     def test_border_repeat_is_limited_to_css_repeat_modes(self):
         design = PixelBorderDesign(owner=self.user, name="Bad Repeat", border_repeat="space")

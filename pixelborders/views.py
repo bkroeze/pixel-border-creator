@@ -4,12 +4,12 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.db.models import Q
-from django.http import HttpResponseBadRequest, JsonResponse
+from django.http import HttpResponse, HttpResponseBadRequest, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods, require_POST
 
 from .ai import generate_frame
-from .css import generate_css
+from .css import generate_css, generate_css_bundle
 from .forms import PixelBorderDesignForm
 from .models import DEFAULT_PALETTE, PixelBorderDesign, default_pixels
 
@@ -41,7 +41,6 @@ def _editor_context(request, design=None, form=None):
         "active_can_edit": active_can_edit,
         "form": form,
         "visible_designs": visible_designs,
-        "visible_designs_css": "\n\n".join(generate_css(visible_design) for visible_design in visible_designs),
         "palette_json": json.dumps(active.palette),
         "pixels_json": json.dumps(active.pixels),
         "active_design_json": json.dumps(
@@ -129,11 +128,16 @@ def design_list(request):
     return render(
         request,
         "pixelborders/_design_list.html",
-        {
-            "visible_designs": visible_designs,
-            "visible_designs_css": "\n\n".join(generate_css(design) for design in visible_designs),
-        },
+        {"visible_designs": visible_designs},
     )
+
+
+@login_required
+@require_http_methods(["GET"])
+def visible_designs_css(request):
+    response = HttpResponse(generate_css_bundle(_visible_designs(request.user)), content_type="text/css")
+    response["Content-Disposition"] = 'attachment; filename="pixel-border-designs.css"'
+    return response
 
 
 @login_required

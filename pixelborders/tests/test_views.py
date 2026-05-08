@@ -142,7 +142,18 @@ class PixelBorderDesignViewTests(TestCase):
         self.client.login(username="owner", password="pw")
         response = self.client.get(reverse("pixelborders:editor"))
         self.assertContains(response, "data-copy-visible-css")
-        self.assertContains(response, "frm-copy-me")
+        self.assertContains(response, reverse("pixelborders:visible_css"))
+
+    def test_visible_designs_css_endpoint_includes_data_urls(self):
+        PixelBorderDesign.objects.create(owner=self.owner, name="Copy Me")
+        self.client.login(username="owner", password="pw")
+        response = self.client.get(reverse("pixelborders:visible_css"))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "text/css")
+        content = response.content.decode()
+        self.assertIn("frm-copy-me", content)
+        self.assertIn("data:image/png;base64,", content)
+        self.assertNotIn("__PIXEL_BORDER_IMAGE__", content)
 
     def test_non_owner_cannot_update_or_delete(self):
         design = PixelBorderDesign.objects.create(owner=self.owner, name="Owned")

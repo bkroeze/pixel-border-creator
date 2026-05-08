@@ -9,12 +9,12 @@
       type="button"
       title="Copy all visible CSS"
       data-copy-visible-css
+      data-css-url="{% url 'pixelborders:visible_css' %}"
       {% if not visible_designs %}disabled{% endif %}
     >
       <i class="copy icon"></i>
     </button>
   </div>
-  {{ visible_designs_css|json_script:"visible-designs-css" }}
   <div class="design-grid">
     {% for design in visible_designs %}
       <article class="design-card">
