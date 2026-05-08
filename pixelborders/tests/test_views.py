@@ -129,6 +129,21 @@ class PixelBorderDesignViewTests(TestCase):
         self.assertContains(response, "Public")
         self.assertNotContains(response, "Private")
 
+    def test_visible_designs_are_sorted_by_name(self):
+        PixelBorderDesign.objects.create(owner=self.owner, name="Zebra")
+        PixelBorderDesign.objects.create(owner=self.owner, name="Alpha")
+        self.client.login(username="owner", password="pw")
+        response = self.client.get(reverse("pixelborders:editor"))
+        content = response.content.decode()
+        self.assertLess(content.index("Alpha"), content.index("Zebra"))
+
+    def test_visible_designs_css_is_available_to_copy(self):
+        PixelBorderDesign.objects.create(owner=self.owner, name="Copy Me")
+        self.client.login(username="owner", password="pw")
+        response = self.client.get(reverse("pixelborders:editor"))
+        self.assertContains(response, "data-copy-visible-css")
+        self.assertContains(response, "frm-copy-me")
+
     def test_non_owner_cannot_update_or_delete(self):
         design = PixelBorderDesign.objects.create(owner=self.owner, name="Owned")
         self.client.login(username="viewer", password="pw")

@@ -76,3 +76,4 @@ LOGIN_REDIRECT_URL = "pixelborders:editor"
 LOGOUT_REDIRECT_URL = "login"
 
 PIXELBORDERS_LLM_MODEL = "openrouter/openai/gpt-5-mini"
+

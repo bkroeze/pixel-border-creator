@@ -54,7 +54,7 @@ class PixelBorderDesign(models.Model):
 
     @property
     def css_class_name(self):
-        return f"pixel-border-{self.slug}"
+        return f"frm-{self.slug}"
 
     @property
     def slice_size(self):

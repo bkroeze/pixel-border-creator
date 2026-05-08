@@ -226,8 +226,8 @@
 
     function updateCss() {
       const imageUrl = renderCanvas();
-      const currentClass = `pixel-border-${slugify(nameInput.value)}`;
-      const css = cssWithImage(state.css, imageUrl).replace(/\.pixel-border-[a-z0-9-]+ \{/, `.${currentClass} {`);
+      const currentClass = `frm-${slugify(nameInput.value)}`;
+      const css = cssWithImage(state.css, imageUrl).replace(/\.frm-[a-z0-9-]+ \{/, `.${currentClass} {`);
       cssPreview.textContent = css;
       cssPreview.style.borderStyle = "solid";
       cssPreview.style.borderWidth = `${Math.max(1, Math.floor(Math.min(canvas.width, canvas.height) / 3))}px`;
@@ -797,10 +797,24 @@
     }
   }
 
+  function initCopyVisibleCss(button) {
+    if (button.dataset.ready === "true") return;
+    button.dataset.ready = "true";
+    button.addEventListener("click", async () => {
+      const cssNode = button.closest(".design-list")?.querySelector('script[type="application/json"]');
+      const css = cssNode ? JSON.parse(cssNode.textContent) : "";
+      await navigator.clipboard.writeText(css);
+      if (window.$ && $.toast) {
+        $.toast({ message: "Visible designs CSS copied.", class: "success" });
+      }
+    });
+  }
+
   function initAll() {
     document.querySelectorAll("[data-pixel-editor]").forEach(initEditor);
     document.querySelectorAll(".pixel-grid").forEach(addSliceGuides);
     document.querySelectorAll("[data-preview-state]").forEach(renderDesignPreview);
+    document.querySelectorAll("[data-copy-visible-css]").forEach(initCopyVisibleCss);
   }
 
   document.addEventListener("DOMContentLoaded", initAll);

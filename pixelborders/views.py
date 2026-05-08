@@ -15,7 +15,7 @@ from .models import DEFAULT_PALETTE, PixelBorderDesign, default_pixels
 
 
 def _visible_designs(user):
-    return PixelBorderDesign.objects.filter(Q(is_public=True) | Q(owner=user)).select_related("owner")
+    return PixelBorderDesign.objects.filter(Q(is_public=True) | Q(owner=user)).select_related("owner").order_by("name", "pk")
 
 
 def _blank_state(user):
@@ -35,11 +35,13 @@ def _blank_state(user):
 def _editor_context(request, design=None, form=None):
     active = design or _blank_state(request.user)
     active_can_edit = active.can_edit(request.user) if active.pk else True
+    visible_designs = _visible_designs(request.user)
     return {
         "active_design": active,
         "active_can_edit": active_can_edit,
         "form": form,
-        "visible_designs": _visible_designs(request.user),
+        "visible_designs": visible_designs,
+        "visible_designs_css": "\n\n".join(generate_css(visible_design) for visible_design in visible_designs),
         "palette_json": json.dumps(active.palette),
         "pixels_json": json.dumps(active.pixels),
         "active_design_json": json.dumps(
@@ -123,10 +125,14 @@ def delete_design(request, pk):
 def design_list(request):
     if not request.htmx:
         return HttpResponseBadRequest("Design list is available as an HTMX fragment.")
+    visible_designs = _visible_designs(request.user)
     return render(
         request,
         "pixelborders/_design_list.html",
-        {"visible_designs": _visible_designs(request.user)},
+        {
+            "visible_designs": visible_designs,
+            "visible_designs_css": "\n\n".join(generate_css(design) for design in visible_designs),
+        },
     )
 
 
