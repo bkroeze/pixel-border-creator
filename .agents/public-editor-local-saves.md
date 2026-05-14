@@ -53,7 +53,7 @@ A slug is the URL/class-safe name generated from a design name. The Python model
 
 ## Plan of Work
 
-First, make the editor view public. Change `_visible_designs(user)` so anonymous users only query public designs, and authenticated users continue to query public plus owned designs. Remove the login requirement from `editor`. Allow `load_design` for anonymous users only when the design is public. Keep `save_design`, `delete_design`, `design_list`, `visible_designs_css`, and `generate_design` protected for authenticated users, except where client-side behavior avoids calling server save for anonymous users.
+First, make the editor view public. Change `_visible_designs(user)` so anonymous users only query public designs, and authenticated users continue to query public plus owned designs. Remove the login requirement from `editor`. Allow `load_design` for anonymous users only when the design is public. Keep `save_design`, `delete_design`, `design_list`, and `generate_design` protected for authenticated users, except where client-side behavior avoids calling server save for anonymous users. Expose `visible_designs_css` publicly so anonymous users can copy CSS for visible public designs.
 
 Next, update `editor.html` so the topbar shows a login link for anonymous users and the username plus logout button for logged-in users. Add a data attribute to the body, such as `data-authenticated="true"` or `false`, so `editor.js` can choose server save versus local save. Change logout redirect settings to return to the public editor.
 
