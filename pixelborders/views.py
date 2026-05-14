@@ -132,7 +132,6 @@ def design_list(request):
     )
 
 
-@login_required
 @require_http_methods(["GET"])
 def visible_designs_css(request):
     response = HttpResponse(generate_css_bundle(_visible_designs(request.user)), content_type="text/css")

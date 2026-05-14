@@ -193,6 +193,15 @@ class PixelBorderDesignViewTests(TestCase):
         self.assertIn("data:image/png;base64,", content)
         self.assertNotIn("__PIXEL_BORDER_IMAGE__", content)
 
+    def test_anonymous_visible_designs_css_only_includes_public_designs(self):
+        PixelBorderDesign.objects.create(owner=self.owner, name="Public Copy", is_public=True)
+        PixelBorderDesign.objects.create(owner=self.owner, name="Private Copy", is_public=False)
+        response = self.client.get(reverse("pixelborders:visible_css"))
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode()
+        self.assertIn("frm-public-copy", content)
+        self.assertNotIn("frm-private-copy", content)
+
     def test_non_owner_cannot_update_or_delete(self):
         design = PixelBorderDesign.objects.create(owner=self.owner, name="Owned")
         self.client.login(username="viewer", password="pw")

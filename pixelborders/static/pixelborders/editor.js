@@ -1034,14 +1034,11 @@
     button.dataset.ready = "true";
     button.addEventListener("click", async () => {
       try {
-        let serverCss = "";
-        if (isAuthenticated()) {
-          const response = await fetch(button.dataset.cssUrl, {
-            headers: { Accept: "text/css" },
-          });
-          if (!response.ok) throw new Error("Could not fetch visible designs CSS.");
-          serverCss = await response.text();
-        }
+        const response = await fetch(button.dataset.cssUrl, {
+          headers: { Accept: "text/css" },
+        });
+        if (!response.ok) throw new Error("Could not fetch visible designs CSS.");
+        const serverCss = await response.text();
         const serverSlugs = new Set(
           Array.from(document.querySelectorAll("[data-design-card]:not([data-local-design-card])"))
             .map((card) => card.dataset.designSlug)
