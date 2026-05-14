@@ -26,9 +26,29 @@ class PixelBorderDesignViewTests(TestCase):
         data.update(overrides)
         return data
 
-    def test_login_required(self):
+    def test_editor_is_public(self):
         response = self.client.get(reverse("pixelborders:editor"))
-        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Pixel Border Creator")
+        self.assertContains(response, "Login")
+
+    def test_authenticated_editor_shows_username_and_logout(self):
+        self.client.login(username="owner", password="pw")
+        response = self.client.get(reverse("pixelborders:editor"))
+        self.assertContains(response, "owner")
+        self.assertContains(response, reverse("logout"))
+
+    def test_anonymous_ai_buttons_are_disabled(self):
+        response = self.client.get(reverse("pixelborders:editor"))
+        self.assertContains(response, 'title="Generate with AI (logged in only)"')
+        self.assertContains(response, "data-ai-open")
+        self.assertContains(response, "disabled")
+
+    def test_authenticated_ai_button_is_enabled(self):
+        self.client.login(username="owner", password="pw")
+        response = self.client.get(reverse("pixelborders:editor"))
+        self.assertContains(response, 'title="Generate with AI"')
+        self.assertNotContains(response, 'title="Generate with AI (logged in only)"')
 
     def test_htmx_save_creates_design(self):
         self.client.login(username="owner", password="pw")
@@ -121,13 +141,31 @@ class PixelBorderDesignViewTests(TestCase):
         )
         self.assertEqual(response.status_code, 400)
 
+    def test_generate_design_requires_login(self):
+        response = self.client.post(
+            reverse("pixelborders:generate"),
+            data=json.dumps({"description": "mossy frame", "size": 21}),
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 302)
+
     def test_public_design_visible_in_list(self):
         PixelBorderDesign.objects.create(owner=self.owner, name="Public", is_public=True)
         PixelBorderDesign.objects.create(owner=self.owner, name="Private", is_public=False)
-        self.client.login(username="viewer", password="pw")
         response = self.client.get(reverse("pixelborders:editor"))
         self.assertContains(response, "Public")
         self.assertNotContains(response, "Private")
+
+    def test_anonymous_can_load_public_design(self):
+        design = PixelBorderDesign.objects.create(owner=self.owner, name="Public", is_public=True)
+        response = self.client.get(reverse("pixelborders:load", args=[design.pk]))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Public")
+
+    def test_anonymous_cannot_load_private_design(self):
+        design = PixelBorderDesign.objects.create(owner=self.owner, name="Private", is_public=False)
+        response = self.client.get(reverse("pixelborders:load", args=[design.pk]))
+        self.assertEqual(response.status_code, 403)
 
     def test_visible_designs_are_sorted_by_name(self):
         PixelBorderDesign.objects.create(owner=self.owner, name="Zebra")

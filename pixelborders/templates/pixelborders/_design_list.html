@@ -17,7 +17,7 @@
   </div>
   <div class="design-grid">
     {% for design in visible_designs %}
-      <article class="design-card">
+      <article class="design-card" data-design-card data-design-slug="{{ design.slug }}">
         <button
           class="design-preview"
           type="button"

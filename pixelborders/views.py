@@ -15,12 +15,14 @@ from .models import DEFAULT_PALETTE, PixelBorderDesign, default_pixels
 
 
 def _visible_designs(user):
+    if not user.is_authenticated:
+        return PixelBorderDesign.objects.filter(is_public=True).select_related("owner").order_by("name", "pk")
     return PixelBorderDesign.objects.filter(Q(is_public=True) | Q(owner=user)).select_related("owner").order_by("name", "pk")
 
 
 def _blank_state(user):
     design = PixelBorderDesign(
-        owner=user,
+        owner=user if user.is_authenticated else None,
         name="Untitled Border",
         slug="untitled-border",
         width=21,
@@ -63,7 +65,6 @@ def _editor_context(request, design=None, form=None):
     }
 
 
-@login_required
 def editor(request):
     return render(request, "pixelborders/editor.html", _editor_context(request))
 
@@ -96,7 +97,6 @@ def save_design(request):
     return redirect("pixelborders:editor")
 
 
-@login_required
 @require_http_methods(["GET"])
 def load_design(request, pk):
     design = get_object_or_404(PixelBorderDesign, pk=pk)

@@ -79,10 +79,22 @@
       <button class="ui icon button import-css" type="button" title="Import" data-import-open>
         <i class="upload icon"></i>
       </button>
-      <button class="ui icon button" type="button" title="Generate with AI" data-ai-open>
+      <button
+        class="ui icon button"
+        type="button"
+        title="{% if request.user.is_authenticated %}Generate with AI{% else %}Generate with AI (logged in only){% endif %}"
+        data-ai-open
+        {% if not request.user.is_authenticated %}disabled{% endif %}
+      >
         <i class="magic icon"></i>
       </button>
-      <button class="ui icon button" type="button" title="Generate variation" data-ai-variation>
+      <button
+        class="ui icon button"
+        type="button"
+        title="{% if request.user.is_authenticated %}Generate variation{% else %}Generate with AI (logged in only){% endif %}"
+        data-ai-variation
+        {% if not request.user.is_authenticated %}disabled{% endif %}
+      >
         <i class="sync alternate icon"></i>
       </button>
       <button class="ui icon button sector-select" type="button" title="Select sector" data-sector-select>
