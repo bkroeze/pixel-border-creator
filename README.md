@@ -38,7 +38,7 @@ From the repository root:
     python manage.py createsuperuser
     python manage.py runserver 127.0.0.1:8000
 
-Open `http://127.0.0.1:8000/`, paint the grid, and save a design. Anonymous saves stay in this browser; signed-in saves are stored in the database. Click the CSS preview to copy the active design CSS, or use the library copy button to copy CSS for all visible public, owned, and browser-local designs.
+Open `http://127.0.0.1:8000/`, paint the grid, and save a design. Anonymous saves stay in this browser; signed-in saves are stored in the database. Click the CSS preview to copy the active design CSS, or use the library copy button to copy CSS for all visible public, owned, and browser-local designs. The direct `designs/css/` export downloads CSS for public designs anonymously, plus owned designs when signed in.
 
 ## Tests
 
