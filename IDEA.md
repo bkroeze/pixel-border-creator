@@ -4,7 +4,7 @@ This webapp helps create and manage the design and CSS for "9 patch" style "bord
 
 # Features
 - Is a single-page webapp
-- Saves designs to DB by user. Owning user can set (their own) designs to public or private, create, update or delete their own designs.
+- Anonymous users can save designs in their browser. Signed-in users save designs to the DB, and owning users can set their own designs to public or private, create, update, or delete them.
 - allows user to name the design, this will become its css classname, slugifying if needed.
 - Includes a simple HxW grid for the design editor.  Clicking on a cell turns it to the active color.
   - the selector grid starts at 21x21 (for 3 vertical and 3 horizontal "slices")
@@ -24,4 +24,3 @@ This webapp helps create and manage the design and CSS for "9 patch" style "bord
   - isolate the functionality of the border maker to a Django module "pixelborders", for easy installation in another Django app.
 - Use Fomantic-UI as the CSS/UI library
 - Use Django-HTMX as the primary strategy for managing the workflow
-
