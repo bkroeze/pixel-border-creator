@@ -307,7 +307,7 @@ wheels = [
 
 [[package]]
 name = "pixel-borders"
-version = "0.1.0"
+version = "0.1.1"
 source = { editable = "." }
 dependencies = [
     { name = "django" },
@@ -318,7 +318,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "django", specifier = ">=5.0,<6.0" },
+    { name = "django", specifier = ">=5.0,<7.0" },
     { name = "django-htmx", specifier = ">=1.17,<2.0" },
     { name = "llm", specifier = ">=0.20" },
     { name = "llm-openrouter", specifier = ">=0.6" },

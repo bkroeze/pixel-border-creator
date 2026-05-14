@@ -1,22 +1,27 @@
 [build-system]
-requires = ["setuptools>=69", "wheel"]
+requires = ["setuptools>=77", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "pixel-borders"
-version = "0.1.0"
+version = "0.1.1"
 description = "Django app for designing 9-patch style CSS border-image PNGs."
 readme = "README.md"
 requires-python = ">=3.12"
+license = "GPL-3.0-or-later"
+license-files = ["gpl-3-0.txt"]
 dependencies = [
-  "Django>=5.0,<6.0",
+  "Django>=5.0,<7.0",
   "django-htmx>=1.17,<2.0",
   "llm>=0.20",
   "llm-openrouter>=0.6",
 ]
 
+[project.urls]
+Repository = "https://github.com/bkroeze/pixel-border-creator"
+
 [tool.setuptools.packages.find]
-include = ["config*", "pixelborders*"]
+include = ["pixelborders*"]
 
 [tool.setuptools.package-data]
 pixelborders = [
