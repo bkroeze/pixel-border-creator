@@ -35,7 +35,25 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 18px;
   padding: 28px 0 18px;
+}
+
+.auth-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.auth-controls form {
+  margin: 0;
+}
+
+.auth-user {
+  font-family: "Courier New", monospace;
+  font-size: .9rem;
+  color: var(--blue);
 }
 
 h1,
@@ -383,6 +401,10 @@ h2 {
 }
 
 @media (max-width: 760px) {
+  .topbar {
+    align-items: flex-start;
+  }
+
   .editor-head,
   .editor-layout,
   .size-controls {

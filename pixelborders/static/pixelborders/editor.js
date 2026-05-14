@@ -1,5 +1,10 @@
 (function () {
   const TRANSPARENT = null;
+  const LOCAL_DESIGNS_KEY = "pixelborders.localDesigns.v1";
+
+  function isAuthenticated() {
+    return document.body.dataset.authenticated === "true";
+  }
 
   function parseState(form) {
     return JSON.parse(form.dataset.state);
@@ -18,6 +23,93 @@
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/^-+|-+$/g, "");
     return slug || "untitled";
+  }
+
+  function designCss(design, imageUrl) {
+    const slice = Math.max(1, Math.floor(Math.min(design.width, design.height) / 3));
+    return [
+      `.${design.cssClassName} {`,
+      "  border-style: solid;",
+      `  border-width: ${slice}px;`,
+      `  border-image-source: url("${imageUrl}");`,
+      `  border-image-slice: ${slice} fill;`,
+      `  border-image-width: ${slice}px;`,
+      `  border-image-repeat: ${design.borderRepeat || "stretch"};`,
+      "}",
+    ].join("\n");
+  }
+
+  function readLocalDesigns() {
+    try {
+      const parsed = JSON.parse(localStorage.getItem(LOCAL_DESIGNS_KEY) || "[]");
+      if (!Array.isArray(parsed)) return [];
+      return parsed.filter((design) => (
+        design
+        && typeof design.name === "string"
+        && typeof design.slug === "string"
+        && Number.isInteger(design.width)
+        && Number.isInteger(design.height)
+        && Array.isArray(design.palette)
+        && Array.isArray(design.pixels)
+      ));
+    } catch (error) {
+      console.warn("Could not read local pixel border designs", error);
+      return [];
+    }
+  }
+
+  function writeLocalDesigns(designs) {
+    localStorage.setItem(LOCAL_DESIGNS_KEY, JSON.stringify(designs));
+  }
+
+  function upsertLocalDesign(design) {
+    const designs = readLocalDesigns();
+    const index = designs.findIndex((candidate) => candidate.slug === design.slug);
+    if (index >= 0) {
+      designs[index] = design;
+    } else {
+      designs.push(design);
+    }
+    designs.sort((left, right) => left.name.localeCompare(right.name) || left.slug.localeCompare(right.slug));
+    writeLocalDesigns(designs);
+  }
+
+  function canvasDataUrlFromDesign(design) {
+    const canvas = document.createElement("canvas");
+    canvas.width = design.width;
+    canvas.height = design.height;
+    const ctx = canvas.getContext("2d");
+    design.pixels.forEach((row, y) => {
+      row.forEach((cell, x) => {
+        if (cell !== TRANSPARENT) {
+          ctx.fillStyle = design.palette[cell];
+          ctx.fillRect(x, y, 1, 1);
+        }
+      });
+    });
+    return canvas.toDataURL("image/png");
+  }
+
+  function normalizedLocalDesign(raw) {
+    const slug = raw.slug || slugify(raw.name);
+    const width = Number(raw.width);
+    const height = Number(raw.height);
+    const repeat = raw.borderRepeat || raw.repeat || "stretch";
+    const design = {
+      id: raw.id || `local:${slug}`,
+      name: raw.name || "Untitled Border",
+      slug,
+      cssClassName: raw.cssClassName || `frm-${slug}`,
+      width,
+      height,
+      palette: raw.palette,
+      pixels: normalizePixels(raw.pixels, width, height),
+      isPublic: false,
+      borderRepeat: repeat,
+      canEdit: true,
+    };
+    design.css = designCss(design, "__PIXEL_BORDER_IMAGE__");
+    return design;
   }
 
   function normalizePixels(pixels, width, height) {
@@ -203,6 +295,63 @@
     const aiApplyButton = form.querySelector("[data-ai-apply]");
     let importSizeOverrideEnabled = false;
     let aiVariationMode = false;
+
+    function currentDesignForLocalSave() {
+      const slug = slugify(nameInput.value || "Untitled Border");
+      const design = normalizedLocalDesign({
+        id: `local:${slug}`,
+        name: nameInput.value || "Untitled Border",
+        slug,
+        cssClassName: `frm-${slug}`,
+        width: pixels[0].length,
+        height: pixels.length,
+        palette: palette.slice(),
+        pixels: pixels.map((row) => row.slice()),
+        borderRepeat: repeatInput.value,
+      });
+      return design;
+    }
+
+    function applyDesignState(nextState) {
+      const next = normalizedLocalDesign(nextState);
+      state.id = next.id;
+      state.name = next.name;
+      state.slug = next.slug;
+      state.cssClassName = next.cssClassName;
+      state.width = next.width;
+      state.height = next.height;
+      state.isPublic = next.isPublic;
+      state.borderRepeat = next.borderRepeat;
+      state.canEdit = next.canEdit;
+      state.css = next.css;
+      designIdInput.value = "";
+      nameInput.value = next.name;
+      repeatInput.value = next.borderRepeat;
+      palette = next.palette.slice();
+      pixels = normalizePixels(next.pixels, next.width, next.height);
+      active = TRANSPARENT;
+      activeSector = null;
+      copiedSector = null;
+      selectSectorMode = false;
+      sizeInput.value = String(next.width);
+      heightInput.value = String(next.height);
+      renderGrid();
+      updateSwatches();
+    }
+
+    function saveLocalDesign() {
+      const design = currentDesignForLocalSave();
+      upsertLocalDesign(design);
+      renderLocalDesigns();
+      if (window.$ && $.toast) {
+        $.toast({ message: "Design saved in this browser.", class: "success" });
+      }
+    }
+
+    form._pixelEditorApi = {
+      loadLocalDesign: applyDesignState,
+      saveLocalDesign,
+    };
 
     function serialize() {
       paletteInput.value = JSON.stringify(palette);
@@ -577,6 +726,13 @@
       });
     });
 
+    form.addEventListener("submit", (event) => {
+      if (isAuthenticated()) return;
+      event.preventDefault();
+      event.stopPropagation();
+      saveLocalDesign();
+    });
+
     lockButton.addEventListener("click", () => {
       unlocked = !unlocked;
       updateSwatches();
@@ -797,15 +953,109 @@
     }
   }
 
+  function previewState(design) {
+    return {
+      width: design.width,
+      height: design.height,
+      palette: design.palette,
+      pixels: design.pixels,
+      className: design.cssClassName,
+      slice: Math.max(1, Math.floor(Math.min(design.width, design.height) / 3)),
+      repeat: design.borderRepeat || "stretch",
+    };
+  }
+
+  function createLocalDesignCard(design) {
+    const article = document.createElement("article");
+    article.className = "design-card";
+    article.dataset.localDesignCard = "true";
+    article.dataset.designSlug = design.slug;
+
+    const button = document.createElement("button");
+    button.className = "design-preview";
+    button.type = "button";
+    button.dataset.previewState = JSON.stringify(previewState(design));
+    button.dataset.localDesign = JSON.stringify(design);
+
+    const label = document.createElement("span");
+    label.textContent = design.name;
+    button.appendChild(label);
+
+    const meta = document.createElement("div");
+    meta.className = "design-meta";
+    const strong = document.createElement("strong");
+    strong.textContent = design.name;
+    const source = document.createElement("span");
+    source.textContent = "Saved in this browser";
+    meta.append(strong, source);
+
+    article.append(button, meta);
+    return article;
+  }
+
+  function localDesignsForDisplay() {
+    return readLocalDesigns().map(normalizedLocalDesign);
+  }
+
+  function renderLocalDesigns() {
+    const list = document.querySelector("#design-list");
+    if (!list) return;
+    const grid = list.querySelector(".design-grid");
+    if (!grid) return;
+
+    grid.querySelectorAll("[data-local-design-card]").forEach((card) => card.remove());
+    const serverSlugs = new Set(
+      Array.from(grid.querySelectorAll("[data-design-card]:not([data-local-design-card])"))
+        .map((card) => card.dataset.designSlug)
+        .filter(Boolean),
+    );
+    localDesignsForDisplay().forEach((design) => {
+      if (serverSlugs.has(design.slug)) return;
+      const card = createLocalDesignCard(design);
+      grid.appendChild(card);
+      renderDesignPreview(card.querySelector("[data-preview-state]"));
+    });
+
+    const emptyState = grid.querySelector(".empty-state");
+    if (emptyState) emptyState.hidden = Boolean(grid.querySelector("[data-preview-state]"));
+
+    const copyButton = list.querySelector("[data-copy-visible-css]");
+    if (copyButton && grid.querySelector("[data-preview-state]")) copyButton.disabled = false;
+  }
+
+  function loadLocalDesign(button) {
+    const form = document.querySelector("[data-pixel-editor]");
+    if (!form || !form._pixelEditorApi) return;
+    form._pixelEditorApi.loadLocalDesign(JSON.parse(button.dataset.localDesign));
+  }
+
   function initCopyVisibleCss(button) {
     if (button.dataset.ready === "true") return;
     button.dataset.ready = "true";
     button.addEventListener("click", async () => {
-      const cssNode = button.closest(".design-list")?.querySelector('script[type="application/json"]');
-      const css = cssNode ? JSON.parse(cssNode.textContent) : "";
-      await navigator.clipboard.writeText(css);
-      if (window.$ && $.toast) {
-        $.toast({ message: "Visible designs CSS copied.", class: "success" });
+      try {
+        const response = await fetch(button.dataset.cssUrl, {
+          headers: { Accept: "text/css" },
+        });
+        if (!response.ok) throw new Error("Could not fetch visible designs CSS.");
+        const serverCss = await response.text();
+        const serverSlugs = new Set(
+          Array.from(document.querySelectorAll("[data-design-card]:not([data-local-design-card])"))
+            .map((card) => card.dataset.designSlug)
+            .filter(Boolean),
+        );
+        const localCss = localDesignsForDisplay()
+          .filter((design) => !serverSlugs.has(design.slug))
+          .map((design) => designCss(design, canvasDataUrlFromDesign(design)))
+          .join("\n\n");
+        await navigator.clipboard.writeText([serverCss, localCss].filter(Boolean).join("\n\n"));
+        if (window.$ && $.toast) {
+          $.toast({ message: "Visible designs CSS copied.", class: "success" });
+        }
+      } catch (error) {
+        if (window.$ && $.toast) {
+          $.toast({ message: error.message, class: "error" });
+        }
       }
     });
   }
@@ -815,8 +1065,19 @@
     document.querySelectorAll(".pixel-grid").forEach(addSliceGuides);
     document.querySelectorAll("[data-preview-state]").forEach(renderDesignPreview);
     document.querySelectorAll("[data-copy-visible-css]").forEach(initCopyVisibleCss);
+    renderLocalDesigns();
   }
 
   document.addEventListener("DOMContentLoaded", initAll);
+  document.body.addEventListener("click", (event) => {
+    const localButton = event.target.closest("[data-local-design]");
+    if (localButton) loadLocalDesign(localButton);
+  });
+  document.body.addEventListener("htmx:beforeRequest", (event) => {
+    if (isAuthenticated()) return;
+    if (!event.target.matches("[data-pixel-editor]")) return;
+    event.preventDefault();
+    event.target._pixelEditorApi?.saveLocalDesign();
+  });
   document.body.addEventListener("htmx:afterSwap", initAll);
 })();
