@@ -46,9 +46,11 @@ Install from a Git tag:
 
     pip install "pixel-borders @ git+https://github.com/bkroeze/pixel-border-creator.git@v0.1.1"
 
-Add `pixelborders.apps.PixelbordersConfig` to `INSTALLED_APPS`, include `pixelborders.urls` wherever you want to mount the editor, and run migrations:
+Add `django_htmx` and `pixelborders.apps.PixelbordersConfig` to `INSTALLED_APPS`, add `django_htmx.middleware.HtmxMiddleware` to `MIDDLEWARE`, include `pixelborders.urls` wherever you want to mount the editor, and run migrations:
 
     python manage.py migrate pixelborders
+
+The host project must also provide Django auth routes named `login` and `logout`, such as `django.contrib.auth.views.LoginView` and `LogoutView`, because the editor links to those route names and authenticated saves use Django's login redirect.
 
 ## Tests
 
